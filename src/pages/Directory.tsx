@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -18,8 +19,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, Mail, Phone, MapPin, Building2, User } from "lucide-react";
+import { Search, Mail, Phone, MapPin, Building2, User, Network } from "lucide-react";
 import type { Profile, Department } from "@/types/database";
+import { OrgChart } from "@/components/directory/OrgChart";
+import { MessageSquare } from "lucide-react";
 
 export default function Directory() {
   const [employees, setEmployees] = useState<Profile[]>([]);
@@ -28,6 +31,7 @@ export default function Directory() {
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [selectedEmployee, setSelectedEmployee] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"grid" | "org">("grid");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -78,11 +82,25 @@ export default function Directory() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Employee Directory</h1>
-        <p className="text-muted-foreground mt-1">
-          Find and connect with colleagues across the organization
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Employee Directory</h1>
+          <p className="text-muted-foreground mt-1">
+            Find and connect with colleagues across the organization
+          </p>
+        </div>
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "grid" | "org")}>
+          <TabsList>
+            <TabsTrigger value="grid" className="gap-2">
+              <User className="h-4 w-4" />
+              Grid
+            </TabsTrigger>
+            <TabsTrigger value="org" className="gap-2">
+              <Network className="h-4 w-4" />
+              Org Chart
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Filters */}
@@ -111,67 +129,73 @@ export default function Directory() {
         </Select>
       </div>
 
-      {/* Results count */}
-      <p className="text-sm text-muted-foreground">
-        Showing {filteredEmployees.length} of {employees.length} employees
-      </p>
-
-      {/* Employee Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredEmployees.map((employee) => (
-          <Card
-            key={employee.id}
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setSelectedEmployee(employee)}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <Avatar className="h-14 w-14">
-                  <AvatarImage src={employee.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {employee.first_name[0]}
-                    {employee.last_name[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold truncate">
-                    {employee.first_name} {employee.last_name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {employee.job_title || "Employee"}
-                  </p>
-                  {employee.department && (
-                    <Badge variant="secondary" className="mt-2">
-                      {employee.department.name}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <div className="mt-4 space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  <span className="truncate">{employee.email}</span>
-                </div>
-                {employee.location && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span className="truncate">{employee.location}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredEmployees.length === 0 && (
-        <div className="text-center py-12">
-          <User className="h-12 w-12 mx-auto text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-semibold">No employees found</h3>
-          <p className="text-muted-foreground">
-            Try adjusting your search or filter criteria
+      {viewMode === "grid" ? (
+        <>
+          {/* Results count */}
+          <p className="text-sm text-muted-foreground">
+            Showing {filteredEmployees.length} of {employees.length} employees
           </p>
-        </div>
+
+          {/* Employee Grid */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredEmployees.map((employee) => (
+              <Card
+                key={employee.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => setSelectedEmployee(employee)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-14 w-14">
+                      <AvatarImage src={employee.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {employee.first_name[0]}
+                        {employee.last_name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold truncate">
+                        {employee.first_name} {employee.last_name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {employee.job_title || "Employee"}
+                      </p>
+                      {employee.department && (
+                        <Badge variant="secondary" className="mt-2">
+                          {employee.department.name}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      <span className="truncate">{employee.email}</span>
+                    </div>
+                    {employee.location && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span className="truncate">{employee.location}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {filteredEmployees.length === 0 && (
+            <div className="text-center py-12">
+              <User className="h-12 w-12 mx-auto text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-semibold">No employees found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search or filter criteria
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <OrgChart employees={filteredEmployees} />
       )}
 
       {/* Employee Detail Dialog */}
@@ -267,5 +291,3 @@ export default function Directory() {
     </div>
   );
 }
-
-import { MessageSquare } from "lucide-react";

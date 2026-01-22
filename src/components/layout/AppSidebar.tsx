@@ -7,10 +7,12 @@ import {
   Settings,
   Shield,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  ListTodo,
+  BookOpen,
+  CalendarDays,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { APP_NAME } from "@/lib/constants";
 import {
@@ -40,6 +42,9 @@ const mainNavItems = [
   { title: "Announcements", url: "/announcements", icon: Megaphone },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Messages", url: "/messages", icon: MessageSquare },
+  { title: "Tasks", url: "/tasks", icon: ListTodo },
+  { title: "Knowledge Base", url: "/wiki", icon: BookOpen },
+  { title: "Events", url: "/events", icon: CalendarDays },
 ];
 
 const adminNavItems = [
