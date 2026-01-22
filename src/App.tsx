@@ -12,6 +12,10 @@ import Directory from "./pages/Directory";
 import Announcements from "./pages/Announcements";
 import Documents from "./pages/Documents";
 import Messages from "./pages/Messages";
+import Tasks from "./pages/Tasks";
+import Wiki from "./pages/Wiki";
+import Events from "./pages/Events";
+import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -63,6 +67,38 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout><Messages /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><Tasks /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wiki"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><Wiki /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/events"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><Events /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><Settings /></AppLayout>
                 </ProtectedRoute>
               }
             />
