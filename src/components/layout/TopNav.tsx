@@ -37,6 +37,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import bayLegalLogo from "@/assets/bay-legal-logo.webp";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
+import { ClockifyWidget } from "@/components/dashboard/ClockifyWidget";
 
 const mainNavItems = [
   { title: "Home", url: "/", icon: Home },
@@ -213,6 +214,7 @@ export function TopNav() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2">
+          <ClockifyWidget compact={true} />
           <GlobalSearch />
 
           {/* User Menu */}

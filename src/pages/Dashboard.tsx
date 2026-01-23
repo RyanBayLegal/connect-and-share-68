@@ -23,7 +23,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Announcement } from "@/types/database";
 import { PRIORITIES, COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
 import { ManagerProgressWidget } from "@/components/dashboard/ManagerProgressWidget";
-import { ClockifyWidget } from "@/components/dashboard/ClockifyWidget";
+
 import { ChatGPTWidget } from "@/components/dashboard/ChatGPTWidget";
 import { BirthdaysAnniversariesWidget } from "@/components/dashboard/BirthdaysAnniversariesWidget";
 import { GoogleReviewsWidget } from "@/components/dashboard/GoogleReviewsWidget";
@@ -137,21 +137,12 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Welcome Banner + Clockify Row */}
+      {/* Welcome Banner */}
       <section className="bg-[hsl(220,60%,15%)] text-white py-4">
-        <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
-            {/* Welcome Message - spans 2 columns */}
-            <div className="lg:col-span-2 text-center lg:text-left">
-              <p className="text-sm md:text-base">
-                Welcome{profile?.first_name ? `, ${profile.first_name}` : ""} to the Bay Legal Knowledge Hub — your go-to place for policies, forms, and helpful resources designed to support you every day.
-              </p>
-            </div>
-            {/* Clockify Widget - 1 column */}
-            <div className="lg:col-span-1">
-              <ClockifyWidget compact={true} />
-            </div>
-          </div>
+        <div className="container text-center">
+          <p className="text-sm md:text-base">
+            Welcome{profile?.first_name ? `, ${profile.first_name}` : ""} to the Bay Legal Knowledge Hub — your go-to place for policies, forms, and helpful resources designed to support you every day.
+          </p>
         </div>
       </section>
 
