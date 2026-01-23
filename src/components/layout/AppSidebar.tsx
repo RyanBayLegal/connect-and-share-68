@@ -11,6 +11,7 @@ import {
   ListTodo,
   BookOpen,
   CalendarDays,
+  GraduationCap,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,6 +49,7 @@ const mainNavItems = [
   { title: "Tasks", url: "/tasks", icon: ListTodo },
   { title: "Knowledge Base", url: "/wiki", icon: BookOpen },
   { title: "Events", url: "/events", icon: CalendarDays },
+  { title: "Training", url: "/training", icon: GraduationCap },
 ];
 
 const adminNavItems = [
