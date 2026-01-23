@@ -16,17 +16,14 @@ import {
   ListTodo,
   BookOpen,
   CalendarDays,
-  DollarSign,
   Settings,
-  Briefcase,
-  Scale,
-  HeadphonesIcon,
-  MonitorIcon,
+  GraduationCap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import type { Announcement } from "@/types/database";
 import { PRIORITIES, COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
+import { ManagerProgressWidget } from "@/components/dashboard/ManagerProgressWidget";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -41,9 +38,9 @@ const resourceCards = [
   { title: "DOCUMENTS", icon: FileText, href: "/documents", description: "Files & resources" },
   { title: "WIKI", icon: BookOpen, href: "/wiki", description: "Knowledge base" },
   { title: "TASKS", icon: ListTodo, href: "/tasks", description: "Projects & tasks" },
+  { title: "TRAINING", icon: GraduationCap, href: "/training", description: "Your courses" },
   { title: "MESSAGES", icon: MessageSquare, href: "/messages", description: "Team chat" },
   { title: "EVENTS", icon: CalendarDays, href: "/events", description: "Calendar" },
-  { title: "SETTINGS", icon: Settings, href: "/settings", description: "Your profile" },
 ];
 
 export default function Dashboard() {
@@ -174,6 +171,11 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* Manager Progress Widget */}
+      <section className="container py-12 pb-0">
+        <ManagerProgressWidget />
       </section>
 
       {/* Recent Announcements */}
