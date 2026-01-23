@@ -36,7 +36,11 @@ interface ClockifyUser {
 
 const CLOCKIFY_API_BASE = "https://api.clockify.me/api/v1";
 
-export function ClockifyWidget() {
+interface ClockifyWidgetProps {
+  compact?: boolean;
+}
+
+export function ClockifyWidget({ compact = false }: ClockifyWidgetProps) {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("clockify_api_key") || "");
   const [tempApiKey, setTempApiKey] = useState("");
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -203,6 +207,85 @@ export function ClockifyWidget() {
       fetchUserData();
     }
   };
+
+  // Compact variant for header placement
+  if (compact) {
+    if (!apiKey) {
+      return (
+        <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+              <Clock className="h-4 w-4 mr-2" />
+              Connect Clockify
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Clockify Configuration</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">API Key</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  placeholder="Enter your Clockify API key"
+                  value={tempApiKey}
+                  onChange={(e) => setTempApiKey(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Find your API key at{" "}
+                  <a
+                    href="https://app.clockify.me/user/settings"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Clockify Settings
+                  </a>
+                </p>
+              </div>
+              <Button onClick={handleSaveApiKey} className="w-full">
+                Save API Key
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-4 bg-white/10 rounded-lg px-4 py-3">
+        <Clock className="h-5 w-5 text-primary shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-white/70">Today</p>
+          <p className="text-lg font-semibold text-white">
+            {formatHoursMinutes(todayTotal + (activeTimer ? elapsedTime : 0))}
+          </p>
+        </div>
+        {activeTimer ? (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-mono text-primary">{formatDuration(elapsedTime)}</span>
+            <Button size="sm" variant="destructive" onClick={stopTimer} className="shrink-0">
+              <Square className="h-3 w-3 mr-1" /> Stop
+            </Button>
+          </div>
+        ) : (
+          <Button size="sm" variant="secondary" onClick={startTimer} className="shrink-0">
+            <Play className="h-3 w-3 mr-1" /> Start
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 shrink-0"
+          onClick={() => window.open("https://app.clockify.me/tracker", "_blank")}
+        >
+          <ExternalLink className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
 
   if (!apiKey) {
     return (
