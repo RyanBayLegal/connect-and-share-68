@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -20,8 +22,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus } from "lucide-react";
+import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus, Pencil, X, Save, Users } from "lucide-react";
 import type { Profile, Department } from "@/types/database";
 import { OrgChart } from "@/components/directory/OrgChart";
 import { AddMemberDialog } from "@/components/directory/AddMemberDialog";
@@ -38,6 +41,15 @@ export default function Directory() {
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editJobTitle, setEditJobTitle] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editManagerId, setEditManagerId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -63,11 +75,93 @@ export default function Directory() {
     fetchData();
   }, []);
 
+  // Check if current user can edit the selected employee's profile
+  const canEditProfile = (employee: Profile) => {
+    if (!user) return false;
+    // User can edit their own profile OR admin can edit anyone's
+    return employee.user_id === user.id || isAdmin();
+  };
+
   // Check if current user can edit the selected employee's avatar
   const canEditAvatar = (employee: Profile) => {
     if (!user) return false;
     // User can edit their own avatar OR admin can edit anyone's
     return employee.user_id === user.id || isAdmin();
+  };
+
+  // Enter edit mode with current values
+  const enterEditMode = () => {
+    if (!selectedEmployee) return;
+    setEditJobTitle(selectedEmployee.job_title || "");
+    setEditPhone(selectedEmployee.phone || "");
+    setEditLocation(selectedEmployee.location || "");
+    setEditBio(selectedEmployee.bio || "");
+    setEditManagerId(selectedEmployee.manager_id || null);
+    setIsEditMode(true);
+  };
+
+  // Cancel edit mode
+  const cancelEditMode = () => {
+    setIsEditMode(false);
+    setEditJobTitle("");
+    setEditPhone("");
+    setEditLocation("");
+    setEditBio("");
+    setEditManagerId(null);
+  };
+
+  // Save profile changes
+  const handleSaveProfile = async () => {
+    if (!selectedEmployee) return;
+
+    setIsSaving(true);
+    try {
+      const updateData: Record<string, any> = {
+        job_title: editJobTitle || null,
+        phone: editPhone || null,
+        location: editLocation || null,
+        bio: editBio || null,
+      };
+
+      // Only admins can update manager_id
+      if (isAdmin()) {
+        updateData.manager_id = editManagerId || null;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update(updateData)
+        .eq("id", selectedEmployee.id);
+
+      if (error) throw error;
+
+      toast.success("Profile updated successfully!");
+      
+      // Refresh data and update selected employee
+      await fetchData();
+      setSelectedEmployee((prev) => 
+        prev ? { 
+          ...prev, 
+          job_title: editJobTitle || null,
+          phone: editPhone || null,
+          location: editLocation || null,
+          bio: editBio || null,
+          manager_id: isAdmin() ? (editManagerId || null) : prev.manager_id,
+        } : null
+      );
+      setIsEditMode(false);
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast.error(error.message || "Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Close dialog and reset edit mode
+  const handleCloseDialog = () => {
+    setSelectedEmployee(null);
+    setIsEditMode(false);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,6 +269,20 @@ export default function Directory() {
   // Check if employee is a manager (has direct reports)
   const isManager = (employeeId: string) => {
     return employees.some((e) => e.manager_id === employeeId);
+  };
+
+  // Get manager name for an employee
+  const getManagerName = (managerId: string | null) => {
+    if (!managerId) return null;
+    const manager = employees.find((e) => e.id === managerId);
+    return manager ? `${manager.first_name} ${manager.last_name}` : null;
+  };
+
+  // Get available managers (all employees except current one)
+  const getAvailableManagers = (currentEmployeeId?: string) => {
+    return employees
+      .filter((e) => e.id !== currentEmployeeId)
+      .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
   };
 
   if (isLoading) {
@@ -397,7 +505,7 @@ export default function Directory() {
   );
 
   return (
-    <div className="space-y-6 px-4 md:px-6 lg:px-8 py-6">
+    <div className="space-y-6 px-6 md:px-10 lg:px-16 py-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -487,10 +595,20 @@ export default function Directory() {
       )}
 
       {/* Employee Detail Dialog */}
-      <Dialog open={!!selectedEmployee} onOpenChange={() => setSelectedEmployee(null)}>
+      <Dialog open={!!selectedEmployee} onOpenChange={handleCloseDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Employee Profile</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>
+                {isEditMode ? "Edit Profile" : "Employee Profile"}
+              </DialogTitle>
+              {!isEditMode && selectedEmployee && canEditProfile(selectedEmployee) && (
+                <Button variant="ghost" size="sm" onClick={enterEditMode}>
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           {selectedEmployee && (
             <div className="space-y-6">
@@ -531,80 +649,183 @@ export default function Directory() {
                   />
                 </div>
 
-                <h3 className="text-xl font-semibold mt-4">
-                  {selectedEmployee.first_name} {selectedEmployee.last_name}
-                </h3>
-                {isManager(selectedEmployee.id) && (
-                  <Badge className="mt-2 bg-accent text-accent-foreground border-accent/50 gap-1">
-                    <Crown className="h-3 w-3" />
-                    Department Lead
-                  </Badge>
-                )}
-                <p className="text-muted-foreground mt-1">
-                  {selectedEmployee.job_title || "Employee"}
-                </p>
-                {selectedEmployee.department && (
-                  <Badge variant="secondary" className="mt-2">
-                    {selectedEmployee.department.name}
-                  </Badge>
+                {!isEditMode && (
+                  <>
+                    <h3 className="text-xl font-semibold mt-4">
+                      {selectedEmployee.first_name} {selectedEmployee.last_name}
+                    </h3>
+                    {isManager(selectedEmployee.id) && (
+                      <Badge className="mt-2 bg-accent text-accent-foreground border-accent/50 gap-1">
+                        <Crown className="h-3 w-3" />
+                        Department Lead
+                      </Badge>
+                    )}
+                    <p className="text-muted-foreground mt-1">
+                      {selectedEmployee.job_title || "Employee"}
+                    </p>
+                    {selectedEmployee.department && (
+                      <Badge variant="secondary" className="mt-2">
+                        {selectedEmployee.department.name}
+                      </Badge>
+                    )}
+                  </>
                 )}
               </div>
 
-              {selectedEmployee.bio && (
-                <p className="text-sm text-muted-foreground text-center">
-                  {selectedEmployee.bio}
-                </p>
-              )}
+              {isEditMode ? (
+                /* Edit Mode Form */
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-job-title">Job Title</Label>
+                    <Input
+                      id="edit-job-title"
+                      value={editJobTitle}
+                      onChange={(e) => setEditJobTitle(e.target.value)}
+                      placeholder="Software Engineer"
+                    />
+                  </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <a
-                    href={`mailto:${selectedEmployee.email}`}
-                    className="text-primary hover:underline"
-                  >
-                    {selectedEmployee.email}
-                  </a>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-phone">Phone</Label>
+                    <Input
+                      id="edit-phone"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-location">Location</Label>
+                    <Input
+                      id="edit-location"
+                      value={editLocation}
+                      onChange={(e) => setEditLocation(e.target.value)}
+                      placeholder="San Francisco, CA"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-bio">Bio</Label>
+                    <Textarea
+                      id="edit-bio"
+                      value={editBio}
+                      onChange={(e) => setEditBio(e.target.value)}
+                      placeholder="Tell us about yourself..."
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Manager selection - admin only */}
+                  {isAdmin() && (
+                    <div className="space-y-2">
+                      <Label>Reports To</Label>
+                      <Select 
+                        value={editManagerId || "none"} 
+                        onValueChange={(v) => setEditManagerId(v === "none" ? null : v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select manager" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Manager</SelectItem>
+                          {getAvailableManagers(selectedEmployee.id).map((emp) => (
+                            <SelectItem key={emp.id} value={emp.id}>
+                              {emp.first_name} {emp.last_name}
+                              {emp.department?.name && ` (${emp.department.name})`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <DialogFooter className="gap-2">
+                    <Button variant="outline" onClick={cancelEditMode} disabled={isSaving}>
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveProfile} disabled={isSaving}>
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-1" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </DialogFooter>
                 </div>
-                {selectedEmployee.phone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a
-                      href={`tel:${selectedEmployee.phone}`}
-                      className="text-primary hover:underline"
-                    >
-                      {selectedEmployee.phone}
-                    </a>
-                  </div>
-                )}
-                {selectedEmployee.location && (
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedEmployee.location}</span>
-                  </div>
-                )}
-                {selectedEmployee.department && (
-                  <div className="flex items-center gap-3">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedEmployee.department.name}</span>
-                  </div>
-                )}
-              </div>
+              ) : (
+                /* View Mode */
+                <>
+                  {selectedEmployee.bio && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      {selectedEmployee.bio}
+                    </p>
+                  )}
 
-              <div className="flex gap-2">
-                <Button className="flex-1" asChild>
-                  <a href={`mailto:${selectedEmployee.email}`}>
-                    <Mail className="h-4 w-4 mr-2" />
-                    Send Email
-                  </a>
-                </Button>
-                <Button variant="outline" className="flex-1" asChild>
-                  <a href={`/messages?to=${selectedEmployee.user_id}`}>
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Message
-                  </a>
-                </Button>
-              </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <a
+                        href={`mailto:${selectedEmployee.email}`}
+                        className="text-primary hover:underline"
+                      >
+                        {selectedEmployee.email}
+                      </a>
+                    </div>
+                    {selectedEmployee.phone && (
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <a
+                          href={`tel:${selectedEmployee.phone}`}
+                          className="text-primary hover:underline"
+                        >
+                          {selectedEmployee.phone}
+                        </a>
+                      </div>
+                    )}
+                    {selectedEmployee.location && (
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>{selectedEmployee.location}</span>
+                      </div>
+                    )}
+                    {selectedEmployee.department && (
+                      <div className="flex items-center gap-3">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <span>{selectedEmployee.department.name}</span>
+                      </div>
+                    )}
+                    {selectedEmployee.manager_id && (
+                      <div className="flex items-center gap-3">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span>Reports to: {getManagerName(selectedEmployee.manager_id)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button className="flex-1" asChild>
+                      <a href={`mailto:${selectedEmployee.email}`}>
+                        <Mail className="h-4 w-4 mr-2" />
+                        Send Email
+                      </a>
+                    </Button>
+                    <Button variant="outline" className="flex-1" asChild>
+                      <a href={`/messages?to=${selectedEmployee.user_id}`}>
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Message
+                      </a>
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </DialogContent>

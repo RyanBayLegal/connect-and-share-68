@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Camera, Loader2, Plus } from "lucide-react";
-import type { Department, AppRole } from "@/types/database";
+import type { Department, AppRole, Profile } from "@/types/database";
 
 interface AddMemberDialogProps {
   open: boolean;
@@ -45,6 +45,7 @@ export function AddMemberDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [employees, setEmployees] = useState<Profile[]>([]);
   
   // Form fields
   const [firstName, setFirstName] = useState("");
@@ -56,6 +57,7 @@ export function AddMemberDialog({
   const [jobTitle, setJobTitle] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
+  const [managerId, setManagerId] = useState<string | null>(null);
 
   const resetForm = () => {
     setFirstName("");
@@ -67,9 +69,28 @@ export function AddMemberDialog({
     setJobTitle("");
     setPhone("");
     setLocation("");
+    setManagerId(null);
     setAvatarFile(null);
     setAvatarPreview(null);
   };
+
+  // Fetch employees for manager dropdown
+  useEffect(() => {
+    if (open) {
+      const fetchEmployees = async () => {
+        const { data } = await supabase
+          .from("profiles")
+          .select("*, department:departments(*)")
+          .eq("is_active", true)
+          .order("first_name");
+        
+        if (data) {
+          setEmployees(data as unknown as Profile[]);
+        }
+      };
+      fetchEmployees();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -134,6 +155,7 @@ export function AddMemberDialog({
         job_title: jobTitle || null,
         phone: phone || null,
         location: location || null,
+        manager_id: managerId || null,
         is_active: true,
       });
 
@@ -297,6 +319,28 @@ export function AddMemberDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Reports To (Manager) */}
+          <div className="space-y-2">
+            <Label>Reports To</Label>
+            <Select 
+              value={managerId || "none"} 
+              onValueChange={(v) => setManagerId(v === "none" ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select manager" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Manager</SelectItem>
+                {employees.map((emp) => (
+                  <SelectItem key={emp.id} value={emp.id}>
+                    {emp.first_name} {emp.last_name}
+                    {emp.department?.name && ` (${emp.department.name})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Job Title */}
