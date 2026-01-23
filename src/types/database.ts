@@ -142,6 +142,7 @@ export interface WikiArticle {
   title: string;
   content: string;
   category_id: string | null;
+  department_id: string | null;
   author_id: string | null;
   is_published: boolean;
   is_featured: boolean;

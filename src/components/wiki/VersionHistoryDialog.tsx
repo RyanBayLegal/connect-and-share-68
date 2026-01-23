@@ -9,9 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { History, RotateCcw, User, Calendar } from "lucide-react";
+import { History, RotateCcw, User, Calendar, GitCompare } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { VersionCompareDialog } from "./VersionCompareDialog";
 import type { Profile } from "@/types/database";
 
 interface WikiArticleVersion {
@@ -48,6 +49,8 @@ export function VersionHistoryDialog({
   const [versions, setVersions] = useState<WikiArticleVersion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [compareDialogOpen, setCompareDialogOpen] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState<WikiArticleVersion | null>(null);
 
   useEffect(() => {
     if (open && articleId) {
@@ -99,85 +102,114 @@ export function VersionHistoryDialog({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Version History: {articleTitle}
-          </DialogTitle>
-        </DialogHeader>
+  const handleCompare = (version: WikiArticleVersion) => {
+    setSelectedForCompare(version);
+    setCompareDialogOpen(true);
+  };
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
-        ) : versions.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>No version history available</p>
-            <p className="text-sm">Versions are created when articles are edited</p>
-          </div>
-        ) : (
-          <ScrollArea className="max-h-[60vh] pr-4">
-            <div className="space-y-4">
-              {versions.map((version, index) => (
-                <div
-                  key={version.id}
-                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={index === 0 ? "default" : "secondary"}
-                          className="font-mono"
-                        >
-                          v{version.version_number}
-                        </Badge>
-                        {index === 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            Latest
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(version.created_at), "MMM d, yyyy 'at' h:mm a")}
-                        </span>
-                        {version.editor && (
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {version.editor.first_name} {version.editor.last_name}
-                          </span>
-                        )}
-                      </div>
-                      {version.change_summary && (
-                        <p className="text-sm italic text-muted-foreground mt-2">
-                          "{version.change_summary}"
-                        </p>
-                      )}
-                    </div>
-                    {isAdmin && index !== 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRestore(version)}
-                        disabled={restoringId === version.id}
-                      >
-                        <RotateCcw className="h-3 w-3 mr-1" />
-                        {restoringId === version.id ? "Restoring..." : "Restore"}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Version History: {articleTitle}
+            </DialogTitle>
+          </DialogHeader>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
-          </ScrollArea>
-        )}
-      </DialogContent>
-    </Dialog>
+          ) : versions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No version history available</p>
+              <p className="text-sm">Versions are created when articles are edited</p>
+            </div>
+          ) : (
+            <ScrollArea className="max-h-[60vh] pr-4">
+              <div className="space-y-4">
+                {versions.map((version, index) => (
+                  <div
+                    key={version.id}
+                    className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={index === 0 ? "default" : "secondary"}
+                            className="font-mono"
+                          >
+                            v{version.version_number}
+                          </Badge>
+                          {index === 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              Latest
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(version.created_at), "MMM d, yyyy 'at' h:mm a")}
+                          </span>
+                          {version.editor && (
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {version.editor.first_name} {version.editor.last_name}
+                            </span>
+                          )}
+                        </div>
+                        {version.change_summary && (
+                          <p className="text-sm italic text-muted-foreground mt-2">
+                            "{version.change_summary}"
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {versions.length > 1 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCompare(version)}
+                          >
+                            <GitCompare className="h-3 w-3 mr-1" />
+                            Compare
+                          </Button>
+                        )}
+                        {isAdmin && index !== 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRestore(version)}
+                            disabled={restoringId === version.id}
+                          >
+                            <RotateCcw className="h-3 w-3 mr-1" />
+                            {restoringId === version.id ? "Restoring..." : "Restore"}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {versions.length > 1 && (
+        <VersionCompareDialog
+          open={compareDialogOpen}
+          onOpenChange={setCompareDialogOpen}
+          versions={versions}
+          initialLeftVersion={selectedForCompare && versions.find(v => v.version_number === selectedForCompare.version_number - 1) || versions[1]}
+          initialRightVersion={selectedForCompare || versions[0]}
+        />
+      )}
+    </>
   );
 }

@@ -32,12 +32,13 @@ import {
   Star,
   History,
   Edit,
+  Building2,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { ArticleFormDialog } from "@/components/wiki/ArticleFormDialog";
 import { VersionHistoryDialog } from "@/components/wiki/VersionHistoryDialog";
-import type { WikiArticle, WikiCategory, Profile } from "@/types/database";
+import type { WikiArticle, WikiCategory, Profile, Department } from "@/types/database";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Shield,
@@ -51,9 +52,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 export default function Wiki() {
   const { isAdmin, profile } = useAuth();
   const [categories, setCategories] = useState<WikiCategory[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [articles, setArticles] = useState<WikiArticle[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedArticle, setSelectedArticle] = useState<WikiArticle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,7 +73,7 @@ export default function Wiki() {
 
   const fetchData = async () => {
     try {
-      const [{ data: catsData }, { data: articlesData }] = await Promise.all([
+      const [{ data: catsData }, { data: articlesData }, { data: deptsData }] = await Promise.all([
         supabase.from("wiki_categories").select("*").order("position"),
         supabase
           .from("wiki_articles")
@@ -78,10 +81,12 @@ export default function Wiki() {
           .eq("is_published", true)
           .order("is_featured", { ascending: false })
           .order("updated_at", { ascending: false }),
+        supabase.from("departments").select("*").order("name"),
       ]);
 
       setCategories((catsData as unknown as WikiCategory[]) || []);
       setArticles((articlesData as unknown as WikiArticle[]) || []);
+      setDepartments((deptsData as Department[]) || []);
     } catch (error) {
       console.error("Error fetching wiki:", error);
     } finally {
@@ -95,6 +100,7 @@ export default function Wiki() {
     category_id: string;
     article_type: "article" | "policy";
     is_featured: boolean;
+    department_id?: string | null;
   }) => {
     if (!profile) return;
 
@@ -103,6 +109,7 @@ export default function Wiki() {
         title: data.title,
         content: data.content,
         category_id: data.category_id || null,
+        department_id: data.department_id || null,
         author_id: profile.id,
         is_published: true,
         is_featured: data.is_featured,
@@ -128,6 +135,7 @@ export default function Wiki() {
     article_type: "article" | "policy";
     is_featured: boolean;
     change_summary?: string;
+    department_id?: string | null;
   }) => {
     if (!profile || !editingArticle) return;
 
@@ -151,6 +159,7 @@ export default function Wiki() {
           title: data.title,
           content: data.content,
           category_id: data.category_id || null,
+          department_id: data.department_id,
           is_featured: data.is_featured,
           article_type: data.article_type,
           current_version: editingArticle.current_version + 1,
@@ -193,15 +202,25 @@ export default function Wiki() {
       selectedCategory === "all" || article.category_id === selectedCategory;
     const matchesType =
       selectedType === "all" || article.article_type === selectedType;
+    const matchesDepartment =
+      selectedDepartment === "all" || 
+      (selectedDepartment === "company" && !article.department_id) ||
+      article.department_id === selectedDepartment;
     const matchesSearch =
       searchQuery === "" ||
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesType && matchesSearch;
+    return matchesCategory && matchesType && matchesDepartment && matchesSearch;
   });
 
   const featuredArticles = filteredArticles.filter((a) => a.is_featured);
   const regularArticles = filteredArticles.filter((a) => !a.is_featured);
+
+  // Get department name by id
+  const getDepartmentName = (departmentId: string | null) => {
+    if (!departmentId) return null;
+    return departments.find(d => d.id === departmentId)?.name;
+  };
 
   if (isLoading) {
     return (
@@ -258,7 +277,7 @@ export default function Wiki() {
           </SelectContent>
         </Select>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-full sm:w-[200px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
@@ -270,10 +289,24 @@ export default function Wiki() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="All Departments" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            <SelectItem value="company">Company-wide</SelectItem>
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.id}>
+                {dept.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Categories Overview */}
-      {selectedCategory === "all" && selectedType === "all" && searchQuery === "" && (
+      {selectedCategory === "all" && selectedType === "all" && selectedDepartment === "all" && searchQuery === "" && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => {
             const IconComponent = iconMap[category.icon || "FileText"] || FileText;
@@ -319,6 +352,7 @@ export default function Wiki() {
               <ArticleCard
                 key={article.id}
                 article={article}
+                departmentName={getDepartmentName(article.department_id)}
                 onView={() => handleViewArticle(article)}
               />
             ))}
@@ -337,6 +371,7 @@ export default function Wiki() {
               <ArticleCard
                 key={article.id}
                 article={article}
+                departmentName={getDepartmentName(article.department_id)}
                 onView={() => handleViewArticle(article)}
               />
             ))}
@@ -375,6 +410,12 @@ export default function Wiki() {
                   )}
                   {selectedArticle.category && (
                     <Badge variant="secondary">{selectedArticle.category.name}</Badge>
+                  )}
+                  {selectedArticle.department_id && (
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      {getDepartmentName(selectedArticle.department_id)}
+                    </Badge>
                   )}
                   <Badge variant="outline" className="font-mono">
                     v{selectedArticle.current_version}
@@ -419,8 +460,9 @@ export default function Wiki() {
                   </div>
                 )}
               </DialogHeader>
-              <div className="prose prose-sm max-w-none mt-4">
-                <p className="whitespace-pre-wrap">{selectedArticle.content}</p>
+              <div className="prose prose-sm dark:prose-invert max-w-none mt-4">
+                {/* Render HTML content safely */}
+                <div dangerouslySetInnerHTML={{ __html: selectedArticle.content }} />
               </div>
             </>
           )}
@@ -432,6 +474,7 @@ export default function Wiki() {
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         categories={categories}
+        departments={departments}
         onSubmit={handleCreateArticle}
       />
 
@@ -441,11 +484,13 @@ export default function Wiki() {
           open={isEditOpen}
           onOpenChange={setIsEditOpen}
           categories={categories}
+          departments={departments}
           isEditing
           initialData={{
             title: editingArticle.title,
             content: editingArticle.content,
             category_id: editingArticle.category_id || "",
+            department_id: editingArticle.department_id,
             article_type: editingArticle.article_type,
             is_featured: editingArticle.is_featured,
           }}
@@ -474,11 +519,16 @@ export default function Wiki() {
 
 function ArticleCard({
   article,
+  departmentName,
   onView,
 }: {
   article: WikiArticle;
+  departmentName?: string | null;
   onView: () => void;
 }) {
+  // Strip HTML tags for preview
+  const plainTextContent = article.content.replace(/<[^>]*>/g, '');
+  
   return (
     <Card 
       className="cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" 
@@ -494,10 +544,16 @@ function ArticleCard({
             {article.is_featured && <Star className="h-4 w-4 text-amber-500" />}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {article.category && (
             <Badge variant="secondary" className="w-fit">
               {article.category.name}
+            </Badge>
+          )}
+          {departmentName && (
+            <Badge variant="outline" className="w-fit text-xs flex items-center gap-1">
+              <Building2 className="h-3 w-3" />
+              {departmentName}
             </Badge>
           )}
           <Badge variant="outline" className="font-mono text-xs">
@@ -506,7 +562,7 @@ function ArticleCard({
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground line-clamp-2">{article.content}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">{plainTextContent}</p>
         <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
           <span>
             {formatDistanceToNow(new Date(article.updated_at), { addSuffix: true })}
