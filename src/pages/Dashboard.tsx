@@ -27,6 +27,7 @@ import { ClockifyWidget } from "@/components/dashboard/ClockifyWidget";
 import { ChatGPTWidget } from "@/components/dashboard/ChatGPTWidget";
 import { BirthdaysAnniversariesWidget } from "@/components/dashboard/BirthdaysAnniversariesWidget";
 import { GoogleReviewsWidget } from "@/components/dashboard/GoogleReviewsWidget";
+import { TrainingQuickActionsWidget } from "@/components/dashboard/TrainingQuickActionsWidget";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -157,6 +158,11 @@ export default function Dashboard() {
       {/* Birthdays & Anniversaries Widget */}
       <section className="container pt-8">
         <BirthdaysAnniversariesWidget />
+      </section>
+
+      {/* Training Quick Actions - only visible to training managers */}
+      <section className="container pt-4">
+        <TrainingQuickActionsWidget />
       </section>
 
       {/* Resources - Full Width */}

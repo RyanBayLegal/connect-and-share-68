@@ -53,11 +53,10 @@ const mainNavItems = [
 ];
 
 export function AppSidebar() {
-  const { profile, isAdmin, hasRole, isSuperAdmin, signOut, roles } = useAuth();
+  const { profile, isAdmin, hasRole, isSuperAdmin, signOut, rolesLoaded } = useAuth();
   const location = useLocation();
 
-  // Access checks - ensure roles are loaded before evaluating
-  const rolesLoaded = roles.length > 0;
+  // Access checks - use rolesLoaded from context for reliable evaluation
   const departmentName = profile?.department?.name?.toLowerCase() || "";
   const isHRDepartment = departmentName.includes("hr") || departmentName.includes("human resources");
   const isTrainingDepartment = departmentName.includes("training");
@@ -65,7 +64,9 @@ export function AppSidebar() {
   
   const canSeeHROnboarding = isSuperAdmin() || isHRDepartment;
   const canSeeTrainingManagement = isSuperAdmin() || isTrainingDepartment || isTrainingManager;
-  const showAdminSection = isAdmin() || canSeeHROnboarding || canSeeTrainingManagement;
+  
+  // Only show admin section once roles are fully loaded
+  const showAdminSection = rolesLoaded && (isAdmin() || canSeeHROnboarding || canSeeTrainingManagement);
 
   const initials = profile
     ? `${profile.first_name[0]}${profile.last_name[0]}`

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Clock, Play, Square, Settings, ExternalLink } from "lucide-react";
+import { Clock, Play, Square, Settings, ExternalLink, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface TimeEntry {
   id: string;
@@ -44,6 +45,7 @@ export function ClockifyWidget({ compact = false }: ClockifyWidgetProps) {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("clockify_api_key") || "");
   const [tempApiKey, setTempApiKey] = useState("");
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [user, setUser] = useState<ClockifyUser | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [activeTimer, setActiveTimer] = useState<TimeEntry | null>(null);
@@ -254,35 +256,92 @@ export function ClockifyWidget({ compact = false }: ClockifyWidgetProps) {
       );
     }
 
+    const formatEntryDuration = (duration: string | null) => {
+      if (!duration) return "";
+      const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+      if (match) {
+        const h = match[1] || "0";
+        const m = match[2] || "0";
+        return `${h}h ${m}m`;
+      }
+      return "";
+    };
+
     return (
-      <div className="flex items-center gap-4 bg-white/10 rounded-lg px-4 py-3">
-        <Clock className="h-5 w-5 text-primary shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-white/70">Today</p>
-          <p className="text-lg font-semibold text-white">
-            {formatHoursMinutes(todayTotal + (activeTimer ? elapsedTime : 0))}
-          </p>
-        </div>
-        {activeTimer ? (
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-mono text-primary">{formatDuration(elapsedTime)}</span>
-            <Button size="sm" variant="destructive" onClick={stopTimer} className="shrink-0">
-              <Square className="h-3 w-3 mr-1" /> Stop
-            </Button>
+      <div className="relative">
+        {/* Main compact bar */}
+        <div className="flex items-center gap-4 bg-white/10 rounded-lg px-4 py-3">
+          <Clock className="h-5 w-5 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-white/70">Today</p>
+            <p className="text-lg font-semibold text-white">
+              {formatHoursMinutes(todayTotal + (activeTimer ? elapsedTime : 0))}
+            </p>
           </div>
-        ) : (
-          <Button size="sm" variant="secondary" onClick={startTimer} className="shrink-0">
-            <Play className="h-3 w-3 mr-1" /> Start
+          {activeTimer ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-mono text-primary">{formatDuration(elapsedTime)}</span>
+              <Button size="sm" variant="destructive" onClick={stopTimer} className="shrink-0">
+                <Square className="h-3 w-3 mr-1" /> Stop
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="secondary" onClick={startTimer} className="shrink-0">
+              <Play className="h-3 w-3 mr-1" /> Start
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 shrink-0"
+            onClick={() => window.open("https://app.clockify.me/tracker", "_blank")}
+          >
+            <ExternalLink className="h-4 w-4" />
           </Button>
+          {timeEntries.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 shrink-0"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
+            </Button>
+          )}
+        </div>
+
+        {/* Expandable recent entries panel */}
+        {isExpanded && timeEntries.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg p-4 shadow-lg z-50">
+            <h4 className="text-sm font-medium mb-3">Recent Entries</h4>
+            <ScrollArea className="max-h-[200px]">
+              <div className="space-y-2">
+                {timeEntries
+                  .filter((e) => e.timeInterval.end)
+                  .slice(0, 5)
+                  .map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="flex items-center justify-between text-sm py-1 border-b border-border/50 last:border-0"
+                    >
+                      <span className="text-muted-foreground truncate max-w-[60%]">
+                        {entry.description || "No description"}
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {formatEntryDuration(entry.timeInterval.duration)}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </ScrollArea>
+            <div className="mt-3 pt-3 border-t flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Today's Total</span>
+              <span className="text-sm font-semibold text-primary">
+                {formatHoursMinutes(todayTotal + (activeTimer ? elapsedTime : 0))}
+              </span>
+            </div>
+          </div>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 shrink-0"
-          onClick={() => window.open("https://app.clockify.me/tracker", "_blank")}
-        >
-          <ExternalLink className="h-4 w-4" />
-        </Button>
       </div>
     );
   }

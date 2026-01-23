@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   roles: AppRole[];
+  rolesLoaded: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -31,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchUserData = async (userId: string) => {
@@ -55,8 +57,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (rolesData) {
         setRoles(rolesData.map((r) => r.role as AppRole));
       }
+      setRolesLoaded(true);
     } catch (error) {
       console.error("Error fetching user data:", error);
+      setRolesLoaded(true);
     }
   };
 
@@ -75,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setProfile(null);
           setRoles([]);
+          setRolesLoaded(false);
         }
         setIsLoading(false);
       }
@@ -86,6 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchUserData(session.user.id);
+      } else {
+        setRolesLoaded(true);
       }
       setIsLoading(false);
     });
@@ -105,6 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setProfile(null);
     setRoles([]);
+    setRolesLoaded(false);
   };
 
   const hasRole = (role: AppRole) => roles.includes(role);
@@ -121,6 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         profile,
         roles,
+        rolesLoaded,
         isLoading,
         signIn,
         signOut,
