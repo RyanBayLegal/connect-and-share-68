@@ -127,51 +127,29 @@ export function AddMemberDialog({
     setIsLoading(true);
 
     try {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-          },
+      // Use edge function to create user (keeps admin logged in)
+      const { data, error } = await supabase.functions.invoke("create-admin-user", {
+        body: {
+          email,
+          password,
+          firstName,
+          lastName,
+          role,
+          departmentId: departmentId || null,
+          jobTitle: jobTitle || null,
+          phone: phone || null,
+          location: location || null,
+          managerId: managerId || null,
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("User creation failed");
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      const userId = authData.user.id;
+      const userId = data.userId;
 
-      // 2. Create profile - with a small delay to ensure auth user is ready
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const { error: profileError } = await supabase.from("profiles").insert({
-        user_id: userId,
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        department_id: departmentId || null,
-        job_title: jobTitle || null,
-        phone: phone || null,
-        location: location || null,
-        manager_id: managerId || null,
-        is_active: true,
-      });
-
-      if (profileError) throw profileError;
-
-      // 3. Assign role
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: userId,
-        role: role,
-      });
-
-      if (roleError) throw roleError;
-
-      // 4. Upload avatar if provided
-      if (avatarFile) {
+      // Upload avatar if provided (after user is created)
+      if (avatarFile && userId) {
         const fileExt = avatarFile.name.split(".").pop();
         const filePath = `${userId}/avatar.${fileExt}`;
 
@@ -179,17 +157,18 @@ export function AddMemberDialog({
           .from("avatars")
           .upload(filePath, avatarFile, { upsert: true });
 
-        if (uploadError) {
-          console.error("Avatar upload error:", uploadError);
-        } else {
+        if (!uploadError) {
           const { data: publicUrlData } = supabase.storage
             .from("avatars")
             .getPublicUrl(filePath);
 
+          // Update avatar URL via direct update (admin has permission)
           await supabase
             .from("profiles")
             .update({ avatar_url: publicUrlData.publicUrl })
             .eq("user_id", userId);
+        } else {
+          console.error("Avatar upload error:", uploadError);
         }
       }
 

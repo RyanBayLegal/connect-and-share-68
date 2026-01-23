@@ -12,13 +12,51 @@ serve(async (req) => {
   }
 
   try {
+    // Verify the caller is authenticated
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Missing authorization header");
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get the calling user
+    const { data: { user: callingUser } } = await supabaseClient.auth.getUser();
+    if (!callingUser) {
+      throw new Error("Unauthorized");
+    }
+
+    // Create admin client for privileged operations
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { email, password, firstName, lastName, role } = await req.json();
+    // Check if caller is super_admin
+    const { data: callerRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callingUser.id)
+      .eq("role", "super_admin")
+      .single();
+
+    if (!callerRoles) {
+      throw new Error("Only super admins can create users");
+    }
+
+    // Parse request body
+    const { email, password, firstName, lastName, role, departmentId, jobTitle, phone, location, managerId } = await req.json();
+
+    if (!email || !password || !firstName || !lastName) {
+      throw new Error("Missing required fields: email, password, firstName, lastName");
+    }
+
+    console.log(`Creating user: ${email} with role: ${role || 'employee'}`);
 
     // Create the auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -28,41 +66,52 @@ serve(async (req) => {
     });
 
     if (authError) {
+      console.error("Auth error:", authError);
       throw authError;
     }
 
     const userId = authData.user.id;
-
-    // Get Engineering department for default
-    const { data: dept } = await supabaseAdmin
-      .from("departments")
-      .select("id")
-      .eq("name", "Engineering")
-      .single();
+    console.log(`Auth user created with ID: ${userId}`);
 
     // Create profile
-    const { error: profileError } = await supabaseAdmin.from("profiles").insert({
+    const profileData: Record<string, any> = {
       user_id: userId,
       email,
       first_name: firstName,
       last_name: lastName,
-      job_title: role === "super_admin" ? "System Administrator" : "Employee",
-      department_id: dept?.id,
-    });
+      is_active: true,
+    };
+
+    // Add optional fields if provided
+    if (departmentId) profileData.department_id = departmentId;
+    if (jobTitle) profileData.job_title = jobTitle;
+    if (phone) profileData.phone = phone;
+    if (location) profileData.location = location;
+    if (managerId) profileData.manager_id = managerId;
+
+    const { error: profileError } = await supabaseAdmin.from("profiles").insert(profileData);
 
     if (profileError) {
+      console.error("Profile error:", profileError);
+      // Try to clean up the auth user if profile creation fails
+      await supabaseAdmin.auth.admin.deleteUser(userId);
       throw profileError;
     }
+
+    console.log("Profile created successfully");
 
     // Assign role
     const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
       user_id: userId,
-      role,
+      role: role || "employee",
     });
 
     if (roleError) {
+      console.error("Role error:", roleError);
       throw roleError;
     }
+
+    console.log(`Role ${role || 'employee'} assigned successfully`);
 
     return new Response(
       JSON.stringify({ success: true, userId }),

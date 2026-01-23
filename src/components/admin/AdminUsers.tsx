@@ -68,38 +68,23 @@ export function AdminUsers() {
     setIsSubmitting(true);
 
     try {
-      // Create auth user via admin API would require edge function
-      // For now, we'll use signUp and the user can set their password
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newEmail,
-        password: newPassword,
-        options: { emailRedirectTo: `${window.location.origin}/` },
+      // Use edge function to create user (keeps admin logged in)
+      const { data, error } = await supabase.functions.invoke("create-admin-user", {
+        body: {
+          email: newEmail,
+          password: newPassword,
+          firstName: newFirstName,
+          lastName: newLastName,
+          role: newRole,
+          departmentId: newDepartment || null,
+          jobTitle: newJobTitle || null,
+        },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Failed to create user");
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      // Create profile
-      const { error: profileError } = await supabase.from("profiles").insert({
-        user_id: authData.user.id,
-        email: newEmail,
-        first_name: newFirstName,
-        last_name: newLastName,
-        department_id: newDepartment || null,
-        job_title: newJobTitle || null,
-      });
-
-      if (profileError) throw profileError;
-
-      // Assign role
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: authData.user.id,
-        role: newRole,
-      });
-
-      if (roleError) throw roleError;
-
-      toast.success("User created successfully!");
+      toast.success(`${newFirstName} ${newLastName} has been added successfully!`);
       setIsCreateOpen(false);
       resetForm();
       fetchData();
