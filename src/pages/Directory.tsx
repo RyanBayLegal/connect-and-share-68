@@ -24,10 +24,17 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus, Pencil, X, Save, Users } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus, Pencil, X, Save, Users, ChevronRight } from "lucide-react";
 import type { Profile, Department } from "@/types/database";
 import { OrgChart } from "@/components/directory/OrgChart";
 import { AddMemberDialog } from "@/components/directory/AddMemberDialog";
+import { ManagerSelect } from "@/components/directory/ManagerSelect";
 
 export default function Directory() {
   const { user, isAdmin } = useAuth();
@@ -278,11 +285,9 @@ export default function Directory() {
     return manager ? `${manager.first_name} ${manager.last_name}` : null;
   };
 
-  // Get available managers (all employees except current one)
-  const getAvailableManagers = (currentEmployeeId?: string) => {
-    return employees
-      .filter((e) => e.id !== currentEmployeeId)
-      .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
+  // Get direct reports for an employee
+  const getDirectReports = (employeeId: string) => {
+    return employees.filter((e) => e.manager_id === employeeId);
   };
 
   if (isLoading) {
@@ -720,23 +725,13 @@ export default function Directory() {
                   {isAdmin() && (
                     <div className="space-y-2">
                       <Label>Reports To</Label>
-                      <Select 
-                        value={editManagerId || "none"} 
-                        onValueChange={(v) => setEditManagerId(v === "none" ? null : v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select manager" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Manager</SelectItem>
-                          {getAvailableManagers(selectedEmployee.id).map((emp) => (
-                            <SelectItem key={emp.id} value={emp.id}>
-                              {emp.first_name} {emp.last_name}
-                              {emp.department?.name && ` (${emp.department.name})`}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <ManagerSelect
+                        value={editManagerId}
+                        onValueChange={setEditManagerId}
+                        employees={employees}
+                        excludeId={selectedEmployee.id}
+                        placeholder="Select manager"
+                      />
                     </div>
                   )}
 
@@ -809,6 +804,51 @@ export default function Directory() {
                       </div>
                     )}
                   </div>
+
+                  {/* Direct Reports Section */}
+                  {getDirectReports(selectedEmployee.id).length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        <span>Direct Reports ({getDirectReports(selectedEmployee.id).length})</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <TooltipProvider>
+                          {getDirectReports(selectedEmployee.id).slice(0, 6).map((report) => (
+                            <Tooltip key={report.id}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => setSelectedEmployee(report)}
+                                  className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                                >
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarImage src={report.avatar_url || undefined} />
+                                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                                      {report.first_name[0]}
+                                      {report.last_name[0]}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm font-medium truncate max-w-[100px]">
+                                    {report.first_name}
+                                  </span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{report.first_name} {report.last_name}</p>
+                                <p className="text-xs text-muted-foreground">{report.job_title || "Employee"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                          {getDirectReports(selectedEmployee.id).length > 6 && (
+                            <div className="flex items-center gap-1 p-2 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                              <span>+{getDirectReports(selectedEmployee.id).length - 6} more</span>
+                              <ChevronRight className="h-4 w-4" />
+                            </div>
+                          )}
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex gap-2">
                     <Button className="flex-1" asChild>

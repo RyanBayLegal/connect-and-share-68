@@ -258,6 +258,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          manager_id: string | null
           name: string
           updated_at: string
         }
@@ -265,6 +266,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          manager_id?: string | null
           name: string
           updated_at?: string
         }
@@ -272,10 +274,19 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          manager_id?: string | null
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "departments_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_folders: {
         Row: {
