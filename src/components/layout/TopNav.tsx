@@ -15,8 +15,6 @@ import {
   BookOpen,
   CalendarDays,
   Menu,
-  X,
-  Search,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -38,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import bayLegalLogo from "@/assets/bay-legal-logo.webp";
+import { GlobalSearch } from "@/components/search/GlobalSearch";
 
 const mainNavItems = [
   { title: "Home", url: "/", icon: Home },
@@ -214,9 +213,7 @@ export function TopNav() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="hidden md:flex">
-            <Search className="h-5 w-5" />
-          </Button>
+          <GlobalSearch />
 
           {/* User Menu */}
           <DropdownMenu>
