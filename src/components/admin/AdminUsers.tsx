@@ -8,18 +8,25 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { ROLE_LABELS } from "@/lib/constants";
 import type { Profile, Department, AppRole } from "@/types/database";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AdminUsers() {
+  const { isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<(Profile & { roles: AppRole[] })[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Edit user state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<(Profile & { roles: AppRole[] }) | null>(null);
+  const [editRoles, setEditRoles] = useState<AppRole[]>([]);
 
   // New user form
   const [newEmail, setNewEmail] = useState("");
@@ -114,6 +121,55 @@ export function AdminUsers() {
     setNewJobTitle("");
   };
 
+  const openEditDialog = (user: Profile & { roles: AppRole[] }) => {
+    setEditingUser(user);
+    setEditRoles(user.roles);
+    setIsEditOpen(true);
+  };
+
+  const handleRoleToggle = (role: AppRole) => {
+    setEditRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+    );
+  };
+
+  const handleUpdateRoles = async () => {
+    if (!editingUser) return;
+    setIsSubmitting(true);
+
+    try {
+      // Delete existing roles
+      const { error: deleteError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", editingUser.user_id);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new roles
+      if (editRoles.length > 0) {
+        const { error: insertError } = await supabase.from("user_roles").insert(
+          editRoles.map((role) => ({
+            user_id: editingUser.user_id,
+            role,
+          }))
+        );
+
+        if (insertError) throw insertError;
+      }
+
+      toast.success("User roles updated successfully!");
+      setIsEditOpen(false);
+      setEditingUser(null);
+      fetchData();
+    } catch (error: any) {
+      console.error("Error updating roles:", error);
+      toast.error(error.message || "Failed to update roles");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const filteredUsers = users.filter(
     (u) =>
       `${u.first_name} ${u.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -170,6 +226,7 @@ export function AdminUsers() {
                     <SelectContent>
                       <SelectItem value="super_admin">Super Admin</SelectItem>
                       <SelectItem value="department_manager">Dept Manager</SelectItem>
+                      <SelectItem value="training_manager">Training Manager</SelectItem>
                       <SelectItem value="employee">Employee</SelectItem>
                       <SelectItem value="contractor">Contractor</SelectItem>
                     </SelectContent>
@@ -201,6 +258,7 @@ export function AdminUsers() {
               <TableHead>Department</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
+              {isSuperAdmin() && <TableHead className="w-[80px]">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -219,10 +277,66 @@ export function AdminUsers() {
                     {user.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
+                {isSuperAdmin() && (
+                  <TableCell>
+                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(user)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
         </Table>
+
+        {/* Edit Roles Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                Edit Roles for {editingUser?.first_name} {editingUser?.last_name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Select the roles you want to assign to this user. Users can have multiple roles.
+              </p>
+              <div className="space-y-2">
+                {(Object.keys(ROLE_LABELS) as AppRole[]).map((role) => (
+                  <label
+                    key={role}
+                    className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={editRoles.includes(role)}
+                      onChange={() => handleRoleToggle(role)}
+                      className="h-4 w-4 rounded border-input"
+                    />
+                    <div>
+                      <span className="font-medium">{ROLE_LABELS[role]}</span>
+                      {role === "training_manager" && (
+                        <p className="text-xs text-muted-foreground">Can manage training courses and enrollments</p>
+                      )}
+                      {role === "super_admin" && (
+                        <p className="text-xs text-muted-foreground">Full system access</p>
+                      )}
+                      {role === "department_manager" && (
+                        <p className="text-xs text-muted-foreground">Can manage their department</p>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdateRoles} disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
