@@ -52,6 +52,7 @@ export function ClockifyWidget({ compact = false }: ClockifyWidgetProps) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [todayTotal, setTodayTotal] = useState(0);
+  const [timerDescription, setTimerDescription] = useState("");
 
   const fetchWithAuth = useCallback(async (endpoint: string, options: RequestInit = {}) => {
     if (!apiKey) return null;
@@ -181,12 +182,14 @@ export function ClockifyWidget({ compact = false }: ClockifyWidgetProps) {
         method: "POST",
         body: JSON.stringify({
           start: new Date().toISOString(),
+          description: timerDescription.trim() || undefined,
         }),
       }
     );
     
     if (result) {
       toast.success("Timer started");
+      setTimerDescription("");
       fetchUserData();
     }
   };
@@ -296,21 +299,37 @@ export function ClockifyWidget({ compact = false }: ClockifyWidgetProps) {
         {isExpanded && (
           <div className="absolute top-full right-0 mt-2 w-72 bg-background border rounded-lg p-4 shadow-lg z-50">
             {/* Timer controls section */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b">
-              <div>
-                <p className="text-xs text-muted-foreground">Today's Total</p>
-                <p className="text-xl font-semibold text-primary">
-                  {formatHoursMinutes(todayTotal + (activeTimer ? elapsedTime : 0))}
-                </p>
+            <div className="mb-4 pb-3 border-b">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Today's Total</p>
+                  <p className="text-xl font-semibold text-primary">
+                    {formatHoursMinutes(todayTotal + (activeTimer ? elapsedTime : 0))}
+                  </p>
+                </div>
+                {activeTimer ? (
+                  <Button size="sm" variant="destructive" onClick={stopTimer}>
+                    <Square className="h-3 w-3 mr-1" /> Stop
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={startTimer} disabled={!timerDescription.trim() && false}>
+                    <Play className="h-3 w-3 mr-1" /> Start
+                  </Button>
+                )}
               </div>
-              {activeTimer ? (
-                <Button size="sm" variant="destructive" onClick={stopTimer}>
-                  <Square className="h-3 w-3 mr-1" /> Stop
-                </Button>
-              ) : (
-                <Button size="sm" onClick={startTimer}>
-                  <Play className="h-3 w-3 mr-1" /> Start
-                </Button>
+              {!activeTimer && (
+                <Input
+                  placeholder="What are you working on?"
+                  value={timerDescription}
+                  onChange={(e) => setTimerDescription(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !activeTimer) {
+                      startTimer();
+                    }
+                  }}
+                  className="h-8 text-sm"
+                  maxLength={255}
+                />
               )}
             </div>
 
