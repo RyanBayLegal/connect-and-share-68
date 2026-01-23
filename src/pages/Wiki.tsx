@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -33,11 +34,15 @@ import {
   History,
   Edit,
   Building2,
+  Download,
+  Info,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { ArticleFormDialog } from "@/components/wiki/ArticleFormDialog";
 import { VersionHistoryDialog } from "@/components/wiki/VersionHistoryDialog";
+import { TemplateSelector, WikiTemplate } from "@/components/wiki/TemplateSelector";
+import { highlightText, stripHtml } from "@/lib/highlightText";
 import type { WikiArticle, WikiCategory, Profile, Department } from "@/types/database";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -54,12 +59,14 @@ export default function Wiki() {
   const [categories, setCategories] = useState<WikiCategory[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [articles, setArticles] = useState<WikiArticle[]>([]);
+  const [templates, setTemplates] = useState<WikiTemplate[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedArticle, setSelectedArticle] = useState<WikiArticle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const articleContentRef = useRef<HTMLDivElement>(null);
 
   // Dialogs
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -73,7 +80,7 @@ export default function Wiki() {
 
   const fetchData = async () => {
     try {
-      const [{ data: catsData }, { data: articlesData }, { data: deptsData }] = await Promise.all([
+      const [{ data: catsData }, { data: articlesData }, { data: deptsData }, { data: templatesData }] = await Promise.all([
         supabase.from("wiki_categories").select("*").order("position"),
         supabase
           .from("wiki_articles")
@@ -82,11 +89,13 @@ export default function Wiki() {
           .order("is_featured", { ascending: false })
           .order("updated_at", { ascending: false }),
         supabase.from("departments").select("*").order("name"),
+        supabase.from("wiki_templates").select("*").eq("is_active", true).order("name"),
       ]);
 
       setCategories((catsData as unknown as WikiCategory[]) || []);
       setArticles((articlesData as unknown as WikiArticle[]) || []);
       setDepartments((deptsData as Department[]) || []);
+      setTemplates((templatesData as unknown as WikiTemplate[]) || []);
     } catch (error) {
       console.error("Error fetching wiki:", error);
     } finally {
@@ -197,6 +206,66 @@ export default function Wiki() {
     setIsHistoryOpen(true);
   };
 
+  const handleExportPdf = async () => {
+    if (!selectedArticle) return;
+
+    try {
+      // Dynamic import of html2pdf
+      const html2pdf = (await import("html2pdf.js")).default;
+
+      // Create a container for the PDF content
+      const container = document.createElement("div");
+      container.style.padding = "40px";
+      container.style.fontFamily = "Arial, sans-serif";
+      container.style.maxWidth = "800px";
+
+      // Add title
+      const title = document.createElement("h1");
+      title.textContent = selectedArticle.title;
+      title.style.fontSize = "24px";
+      title.style.marginBottom = "10px";
+      title.style.color = "#1a1a1a";
+      container.appendChild(title);
+
+      // Add metadata
+      const meta = document.createElement("div");
+      meta.style.color = "#666";
+      meta.style.fontSize = "12px";
+      meta.style.marginBottom = "20px";
+      meta.style.paddingBottom = "10px";
+      meta.style.borderBottom = "1px solid #eee";
+      meta.innerHTML = `
+        <p>Author: ${selectedArticle.author?.first_name || ""} ${selectedArticle.author?.last_name || ""}</p>
+        <p>Last Updated: ${format(new Date(selectedArticle.updated_at), "MMMM d, yyyy")}</p>
+        <p>Version: ${selectedArticle.current_version}</p>
+        ${selectedArticle.article_type === "policy" ? "<p><strong>POLICY DOCUMENT</strong></p>" : ""}
+      `;
+      container.appendChild(meta);
+
+      // Add content
+      const content = document.createElement("div");
+      content.innerHTML = selectedArticle.content;
+      content.style.lineHeight = "1.6";
+      content.style.color = "#333";
+      container.appendChild(content);
+
+      // Generate PDF
+      const opt = {
+        margin: 10,
+        filename: `${selectedArticle.title.replace(/[^a-z0-9]/gi, "_")}.pdf`,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
+      };
+
+      await html2pdf().set(opt).from(container).save();
+      toast.success("PDF downloaded!");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Failed to export PDF");
+    }
+  };
+
   const filteredArticles = articles.filter((article) => {
     const matchesCategory =
       selectedCategory === "all" || article.category_id === selectedCategory;
@@ -246,6 +315,17 @@ export default function Wiki() {
           </Button>
         )}
       </div>
+
+      {/* Non-admin info message */}
+      {!isAdmin() && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Only administrators can create and edit Knowledge Base articles and policies. 
+            If you have suggestions for new content, please contact your department manager.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -353,6 +433,7 @@ export default function Wiki() {
                 key={article.id}
                 article={article}
                 departmentName={getDepartmentName(article.department_id)}
+                searchQuery={searchQuery}
                 onView={() => handleViewArticle(article)}
               />
             ))}
@@ -372,6 +453,7 @@ export default function Wiki() {
                 key={article.id}
                 article={article}
                 departmentName={getDepartmentName(article.department_id)}
+                searchQuery={searchQuery}
                 onView={() => handleViewArticle(article)}
               />
             ))}
@@ -438,29 +520,39 @@ export default function Wiki() {
                   </span>
                 </div>
 
-                {/* Action buttons for admins */}
-                {isAdmin() && (
-                  <div className="flex items-center gap-2 mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditClick(selectedArticle)}
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleHistoryClick(selectedArticle)}
-                    >
-                      <History className="h-3 w-3 mr-1" />
-                      Version History
-                    </Button>
-                  </div>
-                )}
+                {/* Action buttons */}
+                <div className="flex items-center gap-2 mt-4 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportPdf}
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Export PDF
+                  </Button>
+                  {isAdmin() && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditClick(selectedArticle)}
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleHistoryClick(selectedArticle)}
+                      >
+                        <History className="h-3 w-3 mr-1" />
+                        Version History
+                      </Button>
+                    </>
+                  )}
+                </div>
               </DialogHeader>
-              <div className="prose prose-sm dark:prose-invert max-w-none mt-4">
+              <div ref={articleContentRef} className="prose prose-sm dark:prose-invert max-w-none mt-4">
                 {/* Render HTML content safely */}
                 <div dangerouslySetInnerHTML={{ __html: selectedArticle.content }} />
               </div>
@@ -475,6 +567,7 @@ export default function Wiki() {
         onOpenChange={setIsCreateOpen}
         categories={categories}
         departments={departments}
+        templates={templates}
         onSubmit={handleCreateArticle}
       />
 
@@ -485,6 +578,7 @@ export default function Wiki() {
           onOpenChange={setIsEditOpen}
           categories={categories}
           departments={departments}
+          templates={templates}
           isEditing
           initialData={{
             title: editingArticle.title,
@@ -520,14 +614,16 @@ export default function Wiki() {
 function ArticleCard({
   article,
   departmentName,
+  searchQuery,
   onView,
 }: {
   article: WikiArticle;
   departmentName?: string | null;
+  searchQuery?: string;
   onView: () => void;
 }) {
   // Strip HTML tags for preview
-  const plainTextContent = article.content.replace(/<[^>]*>/g, '');
+  const plainTextContent = stripHtml(article.content);
   
   return (
     <Card 
@@ -536,7 +632,9 @@ function ArticleCard({
     >
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{article.title}</CardTitle>
+          <CardTitle className="text-base">
+            {searchQuery ? highlightText(article.title, searchQuery) : article.title}
+          </CardTitle>
           <div className="flex items-center gap-1">
             {article.article_type === "policy" && (
               <Shield className="h-4 w-4 text-blue-600" />
@@ -562,7 +660,10 @@ function ArticleCard({
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground line-clamp-2">{plainTextContent}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {searchQuery ? highlightText(plainTextContent.slice(0, 150), searchQuery) : plainTextContent.slice(0, 150)}
+          {plainTextContent.length > 150 && "..."}
+        </p>
         <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
           <span>
             {formatDistanceToNow(new Date(article.updated_at), { addSuffix: true })}

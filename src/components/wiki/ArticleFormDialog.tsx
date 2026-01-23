@@ -16,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Shield, Star, Building2 } from "lucide-react";
+import { FileText, Shield, Star, Building2, LayoutTemplate } from "lucide-react";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { TemplateSelector, WikiTemplate } from "./TemplateSelector";
 import type { Department } from "@/types/database";
 
 interface WikiCategory {
@@ -43,6 +44,7 @@ interface ArticleFormDialogProps {
   onOpenChange: (open: boolean) => void;
   categories: WikiCategory[];
   departments?: Department[];
+  templates?: WikiTemplate[];
   initialData?: Partial<ArticleFormData>;
   isEditing?: boolean;
   onSubmit: (data: ArticleFormData) => Promise<void>;
@@ -53,6 +55,7 @@ export function ArticleFormDialog({
   onOpenChange,
   categories,
   departments = [],
+  templates = [],
   initialData,
   isEditing = false,
   onSubmit,
@@ -65,6 +68,7 @@ export function ArticleFormDialog({
   const [isFeatured, setIsFeatured] = useState(false);
   const [changeSummary, setChangeSummary] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
 
   useEffect(() => {
     if (open && initialData) {
@@ -107,154 +111,188 @@ export function ArticleFormDialog({
     }
   };
 
+  const handleSelectTemplate = (template: WikiTemplate) => {
+    setContent(template.content);
+    setArticleType(template.article_type);
+    if (template.category_id) {
+      setCategoryId(template.category_id);
+    }
+    setIsTemplateOpen(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit Article" : "Create New Article"}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing ? "Edit Article" : "Create New Article"}
+            </DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Article Type Selector */}
-          <div className="space-y-2">
-            <Label>Type</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={articleType === "article" ? "default" : "outline"}
-                className="flex-1"
-                onClick={() => setArticleType("article")}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Article
-              </Button>
-              <Button
-                type="button"
-                variant={articleType === "policy" ? "default" : "outline"}
-                className="flex-1"
-                onClick={() => setArticleType("policy")}
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                Policy
-              </Button>
-            </div>
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Template Button (only for new articles) */}
+            {!isEditing && templates.length > 0 && (
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsTemplateOpen(true)}
+                  className="w-full justify-start"
+                >
+                  <LayoutTemplate className="h-4 w-4 mr-2" />
+                  Start from Template
+                </Button>
+              </div>
+            )}
 
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={articleType === "policy" ? "Enter policy title..." : "Enter article title..."}
-              required
-            />
-          </div>
-
-          {/* Category, Department and Featured */}
-          <div className="grid grid-cols-3 gap-4">
+            {/* Article Type Selector */}
             <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1">
-                <Building2 className="h-3 w-3" />
-                Department
-              </Label>
-              <Select value={departmentId} onValueChange={setDepartmentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Company-wide</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Featured</Label>
-              <div className="flex items-center gap-2 h-10">
-                <Switch
-                  checked={isFeatured}
-                  onCheckedChange={setIsFeatured}
-                />
-                <Star className={`h-4 w-4 ${isFeatured ? "text-amber-500" : "text-muted-foreground"}`} />
-                <span className="text-sm text-muted-foreground">
-                  {isFeatured ? "Yes" : "No"}
-                </span>
+              <Label>Type</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={articleType === "article" ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => setArticleType("article")}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Article
+                </Button>
+                <Button
+                  type="button"
+                  variant={articleType === "policy" ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => setArticleType("policy")}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Policy
+                </Button>
               </div>
             </div>
-          </div>
 
-          {/* Content - Rich Text Editor */}
-          <div className="space-y-2">
-            <Label>Content</Label>
-            <RichTextEditor
-              value={content}
-              onChange={setContent}
-              placeholder={articleType === "policy" 
-                ? "Write your policy content here. Include scope, guidelines, and procedures..."
-                : "Write your article content here..."
-              }
-            />
-          </div>
-
-          {/* Change Summary (only for editing) */}
-          {isEditing && (
+            {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="changeSummary">Change Summary (optional)</Label>
+              <Label htmlFor="title">Title</Label>
               <Input
-                id="changeSummary"
-                value={changeSummary}
-                onChange={(e) => setChangeSummary(e.target.value)}
-                placeholder="Briefly describe what changed..."
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={articleType === "policy" ? "Enter policy title..." : "Enter article title..."}
+                required
               />
-              <p className="text-xs text-muted-foreground">
-                This helps track changes in version history
-              </p>
             </div>
-          )}
 
-          {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting || !title || !content}>
-              {isSubmitting
-                ? isEditing
-                  ? "Saving..."
-                  : "Publishing..."
-                : isEditing
-                ? "Save Changes"
-                : "Publish"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            {/* Category, Department and Featured */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1">
+                  <Building2 className="h-3 w-3" />
+                  Department
+                </Label>
+                <Select value={departmentId} onValueChange={setDepartmentId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Company-wide</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Featured</Label>
+                <div className="flex items-center gap-2 h-10">
+                  <Switch
+                    checked={isFeatured}
+                    onCheckedChange={setIsFeatured}
+                  />
+                  <Star className={`h-4 w-4 ${isFeatured ? "text-amber-500" : "text-muted-foreground"}`} />
+                  <span className="text-sm text-muted-foreground">
+                    {isFeatured ? "Yes" : "No"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Content - Rich Text Editor */}
+            <div className="space-y-2">
+              <Label>Content</Label>
+              <RichTextEditor
+                value={content}
+                onChange={setContent}
+                placeholder={articleType === "policy" 
+                  ? "Write your policy content here. Include scope, guidelines, and procedures..."
+                  : "Write your article content here..."
+                }
+              />
+            </div>
+
+            {/* Change Summary (only for editing) */}
+            {isEditing && (
+              <div className="space-y-2">
+                <Label htmlFor="changeSummary">Change Summary (optional)</Label>
+                <Input
+                  id="changeSummary"
+                  value={changeSummary}
+                  onChange={(e) => setChangeSummary(e.target.value)}
+                  placeholder="Briefly describe what changed..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  This helps track changes in version history
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting || !title || !content}>
+                {isSubmitting
+                  ? isEditing
+                    ? "Saving..."
+                    : "Publishing..."
+                  : isEditing
+                  ? "Save Changes"
+                  : "Publish"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Selector Dialog */}
+      <TemplateSelector
+        open={isTemplateOpen}
+        onOpenChange={setIsTemplateOpen}
+        templates={templates}
+        onSelectTemplate={handleSelectTemplate}
+      />
+    </>
   );
 }
