@@ -12,13 +12,21 @@ import {
   MessageSquare, 
   ArrowRight,
   Bell,
-  Clock
+  Clock,
+  ListTodo,
+  BookOpen,
+  CalendarDays,
+  DollarSign,
+  Settings,
+  Briefcase,
+  Scale,
+  HeadphonesIcon,
+  MonitorIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import type { Announcement, Profile } from "@/types/database";
+import type { Announcement } from "@/types/database";
 import { PRIORITIES, COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
-import bayLegalLogo from "@/assets/bay-legal-logo.webp";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -26,6 +34,17 @@ interface DashboardStats {
   totalDocuments: number;
   unreadMessages: number;
 }
+
+const resourceCards = [
+  { title: "DIRECTORY", icon: Users, href: "/directory", description: "Find team members" },
+  { title: "ANNOUNCEMENTS", icon: Megaphone, href: "/announcements", description: "Company news" },
+  { title: "DOCUMENTS", icon: FileText, href: "/documents", description: "Files & resources" },
+  { title: "WIKI", icon: BookOpen, href: "/wiki", description: "Knowledge base" },
+  { title: "TASKS", icon: ListTodo, href: "/tasks", description: "Projects & tasks" },
+  { title: "MESSAGES", icon: MessageSquare, href: "/messages", description: "Team chat" },
+  { title: "EVENTS", icon: CalendarDays, href: "/events", description: "Calendar" },
+  { title: "SETTINGS", icon: Settings, href: "/settings", description: "Your profile" },
+];
 
 export default function Dashboard() {
   const { profile, user } = useAuth();
@@ -43,7 +62,6 @@ export default function Dashboard() {
       if (!user) return;
 
       try {
-        // Fetch stats
         const [
           { count: employeeCount },
           { count: documentCount },
@@ -56,7 +74,6 @@ export default function Dashboard() {
             .eq("is_read", false),
         ]);
 
-        // Fetch recent announcements
         const { data: announcements } = await supabase
           .from("announcements")
           .select(`
@@ -68,7 +85,6 @@ export default function Dashboard() {
           .order("published_at", { ascending: false })
           .limit(5);
 
-        // Get read announcements for current user
         const { data: readAnnouncements } = await supabase
           .from("announcement_reads")
           .select("announcement_id")
@@ -97,43 +113,6 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [user]);
 
-  const statCards = [
-    {
-      title: "Employees",
-      value: stats.totalEmployees,
-      icon: Users,
-      href: "/directory",
-      bgClass: "bg-primary/10",
-      iconClass: "text-primary",
-    },
-    {
-      title: "Announcements",
-      value: stats.unreadAnnouncements,
-      label: "unread",
-      icon: Megaphone,
-      href: "/announcements",
-      bgClass: "bg-accent/20",
-      iconClass: "text-accent",
-    },
-    {
-      title: "Documents",
-      value: stats.totalDocuments,
-      icon: FileText,
-      href: "/documents",
-      bgClass: "bg-green-500/10",
-      iconClass: "text-green-600",
-    },
-    {
-      title: "Messages",
-      value: stats.unreadMessages,
-      label: "unread",
-      icon: MessageSquare,
-      href: "/messages",
-      bgClass: "bg-purple-500/10",
-      iconClass: "text-purple-600",
-    },
-  ];
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -143,141 +122,149 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <Card className="bg-gradient-to-r from-[hsl(220,60%,15%)] to-[hsl(210,80%,30%)] text-white border-0 overflow-hidden relative">
-        <div className="absolute inset-0 diamond-pattern opacity-50" />
-        <CardContent className="py-8 relative z-10">
-          <div className="flex items-center gap-4">
-            <img 
-              src={bayLegalLogo} 
-              alt={COMPANY_NAME}
-              className="h-16 w-16 rounded-xl shadow-lg hidden sm:block"
-            />
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                Welcome back, {profile?.first_name}!
-              </h1>
-              <p className="text-white/80 mt-1">
-                {COMPANY_TAGLINE}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col">
+      {/* Hero Section with Diamond Pattern */}
+      <section className="relative bg-gradient-to-br from-muted/50 to-background overflow-hidden">
+        <div className="absolute inset-0 diamond-pattern opacity-30" />
+        <div className="container relative z-10 py-16 md:py-24 text-center">
+          <h1 className="text-3xl md:text-5xl font-light text-primary tracking-wide">
+            {COMPANY_NAME} Hub
+          </h1>
+          <p className="mt-4 text-muted-foreground text-lg">
+            {COMPANY_TAGLINE}
+          </p>
+        </div>
+      </section>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-md transition-shadow border-border/50">
-            <Link to={stat.href}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgClass}`}>
-                  <stat.icon className={`h-4 w-4 ${stat.iconClass}`} />
+      {/* Welcome Banner */}
+      <section className="bg-[hsl(220,60%,15%)] text-white py-4">
+        <div className="container text-center">
+          <p className="text-sm md:text-base">
+            Welcome to the Bay Legal Knowledge Hub — your go-to place for policies, forms, and helpful resources designed to support you every day.
+          </p>
+        </div>
+      </section>
+
+      {/* Resources Section */}
+      <section className="bg-[hsl(220,50%,12%)] py-12">
+        <div className="container">
+          <h2 className="text-2xl md:text-3xl font-light text-primary text-center mb-2">
+            YOUR RESOURCES
+          </h2>
+          <div className="w-24 h-0.5 bg-primary/30 mx-auto mb-10" />
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-4xl mx-auto">
+            {resourceCards.map((resource) => (
+              <Link
+                key={resource.href}
+                to={resource.href}
+                className="group flex flex-col items-center text-center p-6 rounded-lg transition-all hover:bg-white/5"
+              >
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary/20 flex items-center justify-center mb-4 group-hover:bg-primary/30 transition-colors">
+                  <resource.icon className="h-10 w-10 md:h-12 md:w-12 text-primary" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                {stat.label && (
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                )}
-              </CardContent>
-            </Link>
-          </Card>
-        ))}
-      </div>
+                <span className="text-primary font-medium text-sm md:text-base tracking-wide">
+                  {resource.title}
+                </span>
+                <span className="text-muted-foreground text-xs mt-1 hidden md:block">
+                  {resource.description}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Recent Announcements */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              Recent Announcements
-            </CardTitle>
-            <CardDescription>
-              Stay updated with the latest company news
-            </CardDescription>
-          </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/announcements">
-              View All <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {recentAnnouncements.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No announcements yet
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {recentAnnouncements.map((announcement) => (
-                <div
-                  key={announcement.id}
-                  className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={announcement.author?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {announcement.author
-                        ? `${announcement.author.first_name[0]}${announcement.author.last_name[0]}`
-                        : "A"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-semibold truncate">
-                        {announcement.title}
-                      </h4>
-                      <Badge
-                        variant={
-                          announcement.priority === "critical"
-                            ? "destructive"
-                            : announcement.priority === "important"
-                            ? "default"
-                            : "secondary"
-                        }
-                      >
-                        {PRIORITIES[announcement.priority].label}
-                      </Badge>
-                      {announcement.category && (
+      <section className="container py-12">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                Recent Announcements
+              </CardTitle>
+              <CardDescription>
+                Stay updated with the latest company news
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/announcements">
+                View All <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {recentAnnouncements.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No announcements yet
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {recentAnnouncements.map((announcement) => (
+                  <div
+                    key={announcement.id}
+                    className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={announcement.author?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {announcement.author
+                          ? `${announcement.author.first_name[0]}${announcement.author.last_name[0]}`
+                          : "A"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-semibold truncate">
+                          {announcement.title}
+                        </h4>
                         <Badge
-                          variant="outline"
-                          style={{
-                            borderColor: announcement.category.color,
-                            color: announcement.category.color,
-                          }}
+                          variant={
+                            announcement.priority === "critical"
+                              ? "destructive"
+                              : announcement.priority === "important"
+                              ? "default"
+                              : "secondary"
+                          }
                         >
-                          {announcement.category.name}
+                          {PRIORITIES[announcement.priority].label}
                         </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                      {announcement.content}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {announcement.published_at &&
-                        formatDistanceToNow(new Date(announcement.published_at), {
-                          addSuffix: true,
-                        })}
-                      <span>•</span>
-                      <span>
-                        {announcement.author?.first_name}{" "}
-                        {announcement.author?.last_name}
-                      </span>
+                        {announcement.category && (
+                          <Badge
+                            variant="outline"
+                            style={{
+                              borderColor: announcement.category.color,
+                              color: announcement.category.color,
+                            }}
+                          >
+                            {announcement.category.name}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                        {announcement.content}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {announcement.published_at &&
+                          formatDistanceToNow(new Date(announcement.published_at), {
+                            addSuffix: true,
+                          })}
+                        <span>•</span>
+                        <span>
+                          {announcement.author?.first_name}{" "}
+                          {announcement.author?.last_name}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }
