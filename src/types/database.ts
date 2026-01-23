@@ -23,6 +23,8 @@ export interface Profile {
   bio: string | null;
   avatar_url: string | null;
   is_active: boolean;
+  date_of_birth: string | null;
+  date_hired: string | null;
   created_at: string;
   updated_at: string;
   department?: Department;
@@ -271,4 +273,16 @@ export interface Notification {
   message: string;
   is_read: boolean;
   created_at: string;
+}
+
+// Google Reviews Types
+export interface GoogleReview {
+  id: string;
+  reviewer_name: string;
+  review_text: string;
+  rating: number;
+  review_date: string | null;
+  is_featured: boolean;
+  created_at: string;
+  updated_at: string;
 }

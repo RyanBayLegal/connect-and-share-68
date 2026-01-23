@@ -559,6 +559,39 @@ export type Database = {
           },
         ]
       }
+      google_reviews: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_featured: boolean | null
+          rating: number
+          review_date: string | null
+          review_text: string
+          reviewer_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_featured?: boolean | null
+          rating: number
+          review_date?: string | null
+          review_text: string
+          reviewer_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_featured?: boolean | null
+          rating?: number
+          review_date?: string | null
+          review_text?: string
+          reviewer_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -773,6 +806,8 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          date_hired: string | null
+          date_of_birth: string | null
           department_id: string | null
           email: string
           first_name: string
@@ -790,6 +825,8 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          date_hired?: string | null
+          date_of_birth?: string | null
           department_id?: string | null
           email: string
           first_name: string
@@ -807,6 +844,8 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          date_hired?: string | null
+          date_of_birth?: string | null
           department_id?: string | null
           email?: string
           first_name?: string
