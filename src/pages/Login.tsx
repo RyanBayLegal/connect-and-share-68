@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Building2 } from "lucide-react";
-import { APP_NAME } from "@/lib/constants";
+import { AlertCircle } from "lucide-react";
+import { APP_NAME, COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
 import { z } from "zod";
+import bayLegalLogo from "@/assets/bay-legal-logo.webp";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -59,22 +60,35 @@ export default function Login() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center bg-[hsl(220,60%,15%)]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Building2 className="h-6 w-6" />
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[hsl(220,60%,15%)] to-[hsl(210,80%,25%)] px-4 relative overflow-hidden">
+      {/* Diamond pattern overlay */}
+      <div className="absolute inset-0 diamond-pattern" />
+      
+      {/* Decorative elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-[hsl(210,80%,45%)] rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-[hsl(45,90%,55%)] rounded-full blur-3xl opacity-10 translate-y-1/2 -translate-x-1/2" />
+
+      <Card className="w-full max-w-md relative z-10 shadow-2xl border-0">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-4">
+            <img 
+              src={bayLegalLogo} 
+              alt={COMPANY_NAME}
+              className="h-20 w-20 rounded-xl shadow-lg"
+            />
           </div>
-          <CardTitle className="text-2xl">{APP_NAME}</CardTitle>
-          <CardDescription>
-            Sign in to access your company intranet
+          <CardTitle className="text-2xl font-bold text-foreground">
+            {COMPANY_NAME} Hub
+          </CardTitle>
+          <CardDescription className="text-muted-foreground">
+            {COMPANY_TAGLINE}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -91,11 +105,12 @@ export default function Login() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@company.com"
+                placeholder="you@baylegal.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isSubmitting}
+                className="bg-background"
               />
             </div>
 
@@ -109,10 +124,15 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isSubmitting}
+                className="bg-background"
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button 
+              type="submit" 
+              className="w-full bg-primary hover:bg-primary/90" 
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
           </form>

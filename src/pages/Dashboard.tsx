@@ -17,7 +17,8 @@ import {
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import type { Announcement, Profile } from "@/types/database";
-import { PRIORITIES } from "@/lib/constants";
+import { PRIORITIES, COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
+import bayLegalLogo from "@/assets/bay-legal-logo.webp";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -102,7 +103,8 @@ export default function Dashboard() {
       value: stats.totalEmployees,
       icon: Users,
       href: "/directory",
-      color: "text-blue-500",
+      bgClass: "bg-primary/10",
+      iconClass: "text-primary",
     },
     {
       title: "Announcements",
@@ -110,14 +112,16 @@ export default function Dashboard() {
       label: "unread",
       icon: Megaphone,
       href: "/announcements",
-      color: "text-amber-500",
+      bgClass: "bg-accent/20",
+      iconClass: "text-accent",
     },
     {
       title: "Documents",
       value: stats.totalDocuments,
       icon: FileText,
       href: "/documents",
-      color: "text-green-500",
+      bgClass: "bg-green-500/10",
+      iconClass: "text-green-600",
     },
     {
       title: "Messages",
@@ -125,7 +129,8 @@ export default function Dashboard() {
       label: "unread",
       icon: MessageSquare,
       href: "/messages",
-      color: "text-purple-500",
+      bgClass: "bg-purple-500/10",
+      iconClass: "text-purple-600",
     },
   ];
 
@@ -139,26 +144,40 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Welcome back, {profile?.first_name}!
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Here's what's happening in your organization today.
-        </p>
-      </div>
+      {/* Welcome Banner */}
+      <Card className="bg-gradient-to-r from-[hsl(220,60%,15%)] to-[hsl(210,80%,30%)] text-white border-0 overflow-hidden relative">
+        <div className="absolute inset-0 diamond-pattern opacity-50" />
+        <CardContent className="py-8 relative z-10">
+          <div className="flex items-center gap-4">
+            <img 
+              src={bayLegalLogo} 
+              alt={COMPANY_NAME}
+              className="h-16 w-16 rounded-xl shadow-lg hidden sm:block"
+            />
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                Welcome back, {profile?.first_name}!
+              </h1>
+              <p className="text-white/80 mt-1">
+                {COMPANY_TAGLINE}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-md transition-shadow">
+          <Card key={stat.title} className="hover:shadow-md transition-shadow border-border/50">
             <Link to={stat.href}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                <div className={`p-2 rounded-lg ${stat.bgClass}`}>
+                  <stat.icon className={`h-4 w-4 ${stat.iconClass}`} />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
@@ -176,7 +195,7 @@ export default function Dashboard() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
+              <Bell className="h-5 w-5 text-primary" />
               Recent Announcements
             </CardTitle>
             <CardDescription>
@@ -203,7 +222,7 @@ export default function Dashboard() {
                 >
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={announcement.author?.avatar_url || undefined} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary">
                       {announcement.author
                         ? `${announcement.author.first_name[0]}${announcement.author.last_name[0]}`
                         : "A"}
