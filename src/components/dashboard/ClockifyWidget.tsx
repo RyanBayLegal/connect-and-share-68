@@ -212,18 +212,29 @@ export function ClockifyWidget({ compact = false }: ClockifyWidgetProps) {
 
   // Compact variant for header placement
   if (compact) {
+    const formatEntryDuration = (duration: string | null) => {
+      if (!duration) return "";
+      const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+      if (match) {
+        const h = match[1] || "0";
+        const m = match[2] || "0";
+        return `${h}h ${m}m`;
+      }
+      return "";
+    };
+
+    // Not connected - minimal clock icon
     if (!apiKey) {
       return (
         <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <Clock className="h-4 w-4 mr-2" />
-              Connect Clockify
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
+              <Clock className="h-5 w-5" />
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Clockify Configuration</DialogTitle>
+              <DialogTitle>Connect Clockify</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -256,89 +267,129 @@ export function ClockifyWidget({ compact = false }: ClockifyWidgetProps) {
       );
     }
 
-    const formatEntryDuration = (duration: string | null) => {
-      if (!duration) return "";
-      const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-      if (match) {
-        const h = match[1] || "0";
-        const m = match[2] || "0";
-        return `${h}h ${m}m`;
-      }
-      return "";
-    };
-
+    // Connected - minimal timer button with expandable dropdown
     return (
       <div className="relative">
-        {/* Main compact bar */}
-        <div className="flex items-center gap-4 bg-white/10 rounded-lg px-4 py-3">
-          <Clock className="h-5 w-5 text-primary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-white/70">Today</p>
-            <p className="text-lg font-semibold text-white">
-              {formatHoursMinutes(todayTotal + (activeTimer ? elapsedTime : 0))}
-            </p>
-          </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-2 h-9 px-3"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <Clock className="h-4 w-4 text-primary" />
           {activeTimer ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-mono text-primary">{formatDuration(elapsedTime)}</span>
-              <Button size="sm" variant="destructive" onClick={stopTimer} className="shrink-0">
-                <Square className="h-3 w-3 mr-1" /> Stop
-              </Button>
-            </div>
-          ) : (
-            <Button size="sm" variant="secondary" onClick={startTimer} className="shrink-0">
-              <Play className="h-3 w-3 mr-1" /> Start
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 shrink-0"
-            onClick={() => window.open("https://app.clockify.me/tracker", "_blank")}
-          >
-            <ExternalLink className="h-4 w-4" />
-          </Button>
-          {timeEntries.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 shrink-0"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
-            </Button>
-          )}
-        </div>
-
-        {/* Expandable recent entries panel */}
-        {isExpanded && timeEntries.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg p-4 shadow-lg z-50">
-            <h4 className="text-sm font-medium mb-3">Recent Entries</h4>
-            <ScrollArea className="max-h-[200px]">
-              <div className="space-y-2">
-                {timeEntries
-                  .filter((e) => e.timeInterval.end)
-                  .slice(0, 5)
-                  .map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center justify-between text-sm py-1 border-b border-border/50 last:border-0"
-                    >
-                      <span className="text-muted-foreground truncate max-w-[60%]">
-                        {entry.description || "No description"}
-                      </span>
-                      <span className="font-medium text-foreground">
-                        {formatEntryDuration(entry.timeInterval.duration)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </ScrollArea>
-            <div className="mt-3 pt-3 border-t flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Today's Total</span>
-              <span className="text-sm font-semibold text-primary">
-                {formatHoursMinutes(todayTotal + (activeTimer ? elapsedTime : 0))}
+            <>
+              <span className="text-sm font-mono text-primary">
+                {formatDuration(elapsedTime)}
               </span>
+              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            </>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {formatHoursMinutes(todayTotal)}
+            </span>
+          )}
+          <ChevronDown className={cn("h-3 w-3 transition-transform", isExpanded && "rotate-180")} />
+        </Button>
+
+        {/* Expandable dropdown */}
+        {isExpanded && (
+          <div className="absolute top-full right-0 mt-2 w-72 bg-background border rounded-lg p-4 shadow-lg z-50">
+            {/* Timer controls section */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b">
+              <div>
+                <p className="text-xs text-muted-foreground">Today's Total</p>
+                <p className="text-xl font-semibold text-primary">
+                  {formatHoursMinutes(todayTotal + (activeTimer ? elapsedTime : 0))}
+                </p>
+              </div>
+              {activeTimer ? (
+                <Button size="sm" variant="destructive" onClick={stopTimer}>
+                  <Square className="h-3 w-3 mr-1" /> Stop
+                </Button>
+              ) : (
+                <Button size="sm" onClick={startTimer}>
+                  <Play className="h-3 w-3 mr-1" /> Start
+                </Button>
+              )}
+            </div>
+
+            {/* Active timer display */}
+            {activeTimer && (
+              <div className="mb-3 p-2 bg-primary/10 rounded text-center">
+                <span className="text-lg font-mono font-bold text-primary">
+                  {formatDuration(elapsedTime)}
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  {activeTimer.description || "Timer running"}
+                </p>
+              </div>
+            )}
+
+            {/* Recent entries */}
+            {timeEntries.filter(e => e.timeInterval.end).length > 0 && (
+              <>
+                <h4 className="text-sm font-medium mb-2">Recent Entries</h4>
+                <ScrollArea className="max-h-[150px]">
+                  <div className="space-y-1">
+                    {timeEntries
+                      .filter(e => e.timeInterval.end)
+                      .slice(0, 5)
+                      .map(entry => (
+                        <div
+                          key={entry.id}
+                          className="flex justify-between text-sm py-1 border-b border-border/50 last:border-0"
+                        >
+                          <span className="text-muted-foreground truncate max-w-[60%]">
+                            {entry.description || "No description"}
+                          </span>
+                          <span className="font-medium">
+                            {formatEntryDuration(entry.timeInterval.duration)}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </ScrollArea>
+              </>
+            )}
+
+            {/* Footer actions */}
+            <div className="mt-3 pt-3 border-t flex justify-between items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => window.open("https://app.clockify.me/tracker", "_blank")}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" /> Open Clockify
+              </Button>
+              <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Clockify Settings</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="apiKey">API Key</Label>
+                      <Input
+                        id="apiKey"
+                        type="password"
+                        placeholder="Enter your Clockify API key"
+                        value={tempApiKey}
+                        onChange={(e) => setTempApiKey(e.target.value)}
+                      />
+                    </div>
+                    <Button onClick={handleSaveApiKey} className="w-full">
+                      Update API Key
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         )}
