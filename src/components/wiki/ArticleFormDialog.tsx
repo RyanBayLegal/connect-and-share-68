@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
@@ -17,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Shield, Star } from "lucide-react";
+import { FileText, Shield, Star, Building2 } from "lucide-react";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import type { Department } from "@/types/database";
 
 interface WikiCategory {
   id: string;
@@ -34,12 +35,14 @@ interface ArticleFormData {
   article_type: "article" | "policy";
   is_featured: boolean;
   change_summary?: string;
+  department_id?: string | null;
 }
 
 interface ArticleFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: WikiCategory[];
+  departments?: Department[];
   initialData?: Partial<ArticleFormData>;
   isEditing?: boolean;
   onSubmit: (data: ArticleFormData) => Promise<void>;
@@ -49,6 +52,7 @@ export function ArticleFormDialog({
   open,
   onOpenChange,
   categories,
+  departments = [],
   initialData,
   isEditing = false,
   onSubmit,
@@ -56,6 +60,7 @@ export function ArticleFormDialog({
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [departmentId, setDepartmentId] = useState<string>("all");
   const [articleType, setArticleType] = useState<"article" | "policy">("article");
   const [isFeatured, setIsFeatured] = useState(false);
   const [changeSummary, setChangeSummary] = useState("");
@@ -66,6 +71,7 @@ export function ArticleFormDialog({
       setTitle(initialData.title || "");
       setContent(initialData.content || "");
       setCategoryId(initialData.category_id || "");
+      setDepartmentId(initialData.department_id || "all");
       setArticleType(initialData.article_type || "article");
       setIsFeatured(initialData.is_featured || false);
       setChangeSummary("");
@@ -74,6 +80,7 @@ export function ArticleFormDialog({
       setTitle("");
       setContent("");
       setCategoryId("");
+      setDepartmentId("all");
       setArticleType("article");
       setIsFeatured(false);
       setChangeSummary("");
@@ -92,6 +99,7 @@ export function ArticleFormDialog({
         article_type: articleType,
         is_featured: isFeatured,
         change_summary: changeSummary || undefined,
+        department_id: departmentId === "all" ? null : departmentId,
       });
       onOpenChange(false);
     } finally {
@@ -101,7 +109,7 @@ export function ArticleFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Article" : "Create New Article"}
@@ -146,8 +154,8 @@ export function ArticleFormDialog({
             />
           </div>
 
-          {/* Category and Featured */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Category, Department and Featured */}
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Category</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
@@ -164,6 +172,25 @@ export function ArticleFormDialog({
               </Select>
             </div>
             <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <Building2 className="h-3 w-3" />
+                Department
+              </Label>
+              <Select value={departmentId} onValueChange={setDepartmentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Company-wide</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>Featured</Label>
               <div className="flex items-center gap-2 h-10">
                 <Switch
@@ -172,26 +199,22 @@ export function ArticleFormDialog({
                 />
                 <Star className={`h-4 w-4 ${isFeatured ? "text-amber-500" : "text-muted-foreground"}`} />
                 <span className="text-sm text-muted-foreground">
-                  {isFeatured ? "Featured" : "Not featured"}
+                  {isFeatured ? "Yes" : "No"}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Content */}
+          {/* Content - Rich Text Editor */}
           <div className="space-y-2">
-            <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
+            <Label>Content</Label>
+            <RichTextEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={12}
-              required
+              onChange={setContent}
               placeholder={articleType === "policy" 
                 ? "Write your policy content here. Include scope, guidelines, and procedures..."
                 : "Write your article content here..."
               }
-              className="font-mono text-sm"
             />
           </div>
 
@@ -220,7 +243,7 @@ export function ArticleFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !title || !content}>
               {isSubmitting
                 ? isEditing
                   ? "Saving..."

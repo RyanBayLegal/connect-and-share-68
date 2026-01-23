@@ -17,6 +17,7 @@ import Wiki from "./pages/Wiki";
 import Events from "./pages/Events";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
+import DepartmentHub from "./pages/DepartmentHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -107,6 +108,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["super_admin", "department_manager"]}>
                   <AppLayout><Admin /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/department"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><DepartmentHub /></AppLayout>
                 </ProtectedRoute>
               }
             />

@@ -36,8 +36,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import bayLegalLogo from "@/assets/bay-legal-logo.webp";
 
+import { Building2 } from "lucide-react";
+
 const mainNavItems = [
   { title: "Dashboard", url: "/", icon: Home },
+  { title: "My Department", url: "/department", icon: Building2 },
   { title: "Employee Directory", url: "/directory", icon: Users },
   { title: "Announcements", url: "/announcements", icon: Megaphone },
   { title: "Documents", url: "/documents", icon: FileText },

@@ -789,6 +789,7 @@ export type Database = {
           content: string
           created_at: string
           current_version: number
+          department_id: string | null
           id: string
           is_featured: boolean
           is_published: boolean
@@ -804,6 +805,7 @@ export type Database = {
           content: string
           created_at?: string
           current_version?: number
+          department_id?: string | null
           id?: string
           is_featured?: boolean
           is_published?: boolean
@@ -819,6 +821,7 @@ export type Database = {
           content?: string
           created_at?: string
           current_version?: number
+          department_id?: string | null
           id?: string
           is_featured?: boolean
           is_published?: boolean
@@ -840,6 +843,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "wiki_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_articles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
           {
