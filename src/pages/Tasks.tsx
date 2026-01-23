@@ -150,7 +150,7 @@ export default function Tasks() {
         .insert({
           name: projectName,
           description: projectDescription || null,
-          department_id: projectDepartment || null,
+          department_id: projectDepartment === "none" ? null : projectDepartment || null,
           created_by: profile.id,
         })
         .select()
@@ -178,7 +178,7 @@ export default function Tasks() {
         title: taskTitle,
         description: taskDescription || null,
         project_id: selectedProject.id,
-        assignee_id: taskAssignee || null,
+        assignee_id: taskAssignee === "none" ? null : taskAssignee || null,
         created_by: profile.id,
         priority: taskPriority,
         due_date: taskDueDate || null,
@@ -272,7 +272,7 @@ export default function Tasks() {
                       <SelectValue placeholder="All departments" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Departments</SelectItem>
+                      <SelectItem value="none">All Departments</SelectItem>
                       {departments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
@@ -325,7 +325,7 @@ export default function Tasks() {
                           <SelectValue placeholder="Unassigned" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
+                          <SelectItem value="none">Unassigned</SelectItem>
                           {employees.map((e) => (
                             <SelectItem key={e.id} value={e.id}>
                               {e.first_name} {e.last_name}
