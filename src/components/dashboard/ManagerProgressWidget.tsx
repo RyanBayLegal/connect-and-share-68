@@ -222,8 +222,8 @@ export function ManagerProgressWidget() {
           </CardDescription>
         </div>
         <Button variant="outline" size="sm" asChild className="group">
-          <Link to="/directory">
-            View Team <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          <Link to="/team-progress">
+            View Details <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </Button>
       </CardHeader>

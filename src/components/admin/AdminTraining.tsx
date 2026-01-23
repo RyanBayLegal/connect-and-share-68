@@ -11,10 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, GraduationCap, Users, Clock, BookOpen, UserPlus, UsersRound } from "lucide-react";
+import { Plus, Pencil, Trash2, GraduationCap, Users, Clock, BookOpen, UserPlus, UsersRound, FileStack } from "lucide-react";
 import { toast } from "sonner";
 import type { Department, Profile } from "@/types/database";
 import { ManagerSelect } from "@/components/directory/ManagerSelect";
+import { TrainingMaterialsDialog } from "./TrainingMaterialsDialog";
 
 interface TrainingCourse {
   id: string;
@@ -82,7 +83,18 @@ export function AdminTraining() {
   const [bulkPreviewCount, setBulkPreviewCount] = useState(0);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   
+  // Materials dialog state
+  const [isMaterialsOpen, setIsMaterialsOpen] = useState(false);
+  const [materialsCourseId, setMaterialsCourseId] = useState<string | null>(null);
+  const [materialsCourseTitle, setMaterialsCourseTitle] = useState("");
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const openMaterialsDialog = (course: TrainingCourse) => {
+    setMaterialsCourseId(course.id);
+    setMaterialsCourseTitle(course.title);
+    setIsMaterialsOpen(true);
+  };
 
   useEffect(() => {
     fetchData();
@@ -554,6 +566,14 @@ export function AdminTraining() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Manage materials"
+                          onClick={() => openMaterialsDialog(course)}
+                        >
+                          <FileStack className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           title="Enroll employee"
                           onClick={() => openEnrollDialog(course.id)}
                         >
@@ -785,6 +805,18 @@ export function AdminTraining() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Training Materials Dialog */}
+      <TrainingMaterialsDialog
+        isOpen={isMaterialsOpen}
+        onClose={() => {
+          setIsMaterialsOpen(false);
+          setMaterialsCourseId(null);
+          setMaterialsCourseTitle("");
+        }}
+        courseId={materialsCourseId}
+        courseTitle={materialsCourseTitle}
+      />
     </div>
   );
 }
