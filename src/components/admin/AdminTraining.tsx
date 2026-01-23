@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, GraduationCap, Users, Clock, BookOpen, UserPlus } from "lucide-react";
+import { Plus, Pencil, Trash2, GraduationCap, Users, Clock, BookOpen, UserPlus, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import type { Department, Profile } from "@/types/database";
 import { ManagerSelect } from "@/components/directory/ManagerSelect";
@@ -73,6 +73,14 @@ export function AdminTraining() {
   // Enrollments view
   const [viewingCourseId, setViewingCourseId] = useState<string | null>(null);
   const [courseEnrollments, setCourseEnrollments] = useState<TrainingEnrollment[]>([]);
+  
+  // Bulk enrollment state
+  const [isBulkEnrollOpen, setIsBulkEnrollOpen] = useState(false);
+  const [bulkCourseId, setBulkCourseId] = useState<string | null>(null);
+  const [bulkDepartmentId, setBulkDepartmentId] = useState<string | null>(null);
+  const [bulkDueDate, setBulkDueDate] = useState("");
+  const [bulkPreviewCount, setBulkPreviewCount] = useState(0);
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -248,6 +256,102 @@ export function AdminTraining() {
   const openViewEnrollments = (courseId: string) => {
     setViewingCourseId(courseId);
     fetchEnrollments(courseId);
+  };
+
+  const openBulkEnroll = (courseId: string) => {
+    setBulkCourseId(courseId);
+    setBulkDepartmentId(null);
+    setBulkDueDate("");
+    setBulkPreviewCount(0);
+    setIsBulkEnrollOpen(true);
+    calculateBulkPreview(courseId, null);
+  };
+
+  const calculateBulkPreview = async (courseId: string, departmentId: string | null) => {
+    setIsBulkLoading(true);
+    try {
+      // Get employees to enroll
+      let query = supabase.from("profiles").select("id").eq("is_active", true);
+      if (departmentId) {
+        query = query.eq("department_id", departmentId);
+      }
+      const { data: employeeList } = await query;
+
+      // Get already enrolled employees
+      const { data: existing } = await supabase
+        .from("training_enrollments")
+        .select("employee_id")
+        .eq("course_id", courseId);
+
+      const existingIds = new Set(existing?.map((e) => e.employee_id) || []);
+      const toEnroll = employeeList?.filter((e) => !existingIds.has(e.id)) || [];
+      
+      setBulkPreviewCount(toEnroll.length);
+    } catch (error) {
+      console.error("Error calculating bulk preview:", error);
+      setBulkPreviewCount(0);
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
+
+  const handleBulkEnroll = async () => {
+    if (!bulkCourseId || bulkPreviewCount === 0) return;
+    setIsSubmitting(true);
+
+    try {
+      // Get employees to enroll
+      let query = supabase.from("profiles").select("id").eq("is_active", true);
+      if (bulkDepartmentId) {
+        query = query.eq("department_id", bulkDepartmentId);
+      }
+      const { data: employeeList } = await query;
+
+      // Get already enrolled employees
+      const { data: existing } = await supabase
+        .from("training_enrollments")
+        .select("employee_id")
+        .eq("course_id", bulkCourseId);
+
+      const existingIds = new Set(existing?.map((e) => e.employee_id) || []);
+      const toEnroll = employeeList?.filter((e) => !existingIds.has(e.id)) || [];
+
+      if (toEnroll.length === 0) {
+        toast.info("All employees are already enrolled");
+        return;
+      }
+
+      // Insert all at once
+      const enrollments = toEnroll.map((e) => ({
+        course_id: bulkCourseId,
+        employee_id: e.id,
+        assigned_by: profile?.id,
+        due_date: bulkDueDate || null,
+        status: "assigned",
+      }));
+
+      const { error } = await supabase.from("training_enrollments").insert(enrollments);
+      
+      if (error) throw error;
+      
+      toast.success(`Successfully enrolled ${toEnroll.length} employee${toEnroll.length !== 1 ? "s" : ""}`);
+      setIsBulkEnrollOpen(false);
+      if (viewingCourseId === bulkCourseId) {
+        fetchEnrollments(bulkCourseId);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to bulk enroll employees");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleBulkDepartmentChange = (deptId: string) => {
+    const newDeptId = deptId === "all" ? null : deptId;
+    setBulkDepartmentId(newDeptId);
+    if (bulkCourseId) {
+      calculateBulkPreview(bulkCourseId, newDeptId);
+    }
   };
 
   const getDeptName = (deptId: string | null) => {
@@ -450,10 +554,18 @@ export function AdminTraining() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Enroll employees"
+                          title="Enroll employee"
                           onClick={() => openEnrollDialog(course.id)}
                         >
                           <UserPlus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Bulk enroll department"
+                          onClick={() => openBulkEnroll(course.id)}
+                        >
+                          <UsersRound className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -578,6 +690,99 @@ export function AdminTraining() {
               </TableBody>
             </Table>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Enrollment Dialog */}
+      <Dialog
+        open={isBulkEnrollOpen}
+        onOpenChange={(open) => {
+          setIsBulkEnrollOpen(open);
+          if (!open) {
+            setBulkCourseId(null);
+            setBulkDepartmentId(null);
+            setBulkDueDate("");
+            setBulkPreviewCount(0);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UsersRound className="h-5 w-5" />
+              Bulk Enroll Employees
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Course</Label>
+              <Input
+                value={courses.find((c) => c.id === bulkCourseId)?.title || ""}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Select Department</Label>
+              <Select
+                value={bulkDepartmentId || "all"}
+                onValueChange={handleBulkDepartmentChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Employees" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Employees</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Due Date (optional)</Label>
+              <Input
+                type="date"
+                value={bulkDueDate}
+                onChange={(e) => setBulkDueDate(e.target.value)}
+              />
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              {isBulkLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                  Calculating...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    <strong>{bulkPreviewCount}</strong> employee{bulkPreviewCount !== 1 ? "s" : ""} will be enrolled
+                  </span>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Excludes employees already enrolled in this course
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsBulkEnrollOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleBulkEnroll}
+                disabled={isSubmitting || bulkPreviewCount === 0 || isBulkLoading}
+              >
+                {isSubmitting ? "Enrolling..." : `Enroll ${bulkPreviewCount} Employee${bulkPreviewCount !== 1 ? "s" : ""}`}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
