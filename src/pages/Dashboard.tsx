@@ -136,12 +136,21 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Welcome Banner */}
+      {/* Welcome Banner + Clockify Row */}
       <section className="bg-[hsl(220,60%,15%)] text-white py-4">
-        <div className="container text-center">
-          <p className="text-sm md:text-base">
-            Welcome{profile?.first_name ? `, ${profile.first_name}` : ""} to the Bay Legal Knowledge Hub — your go-to place for policies, forms, and helpful resources designed to support you every day.
-          </p>
+        <div className="container">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+            {/* Welcome Message - spans 2 columns */}
+            <div className="lg:col-span-2 text-center lg:text-left">
+              <p className="text-sm md:text-base">
+                Welcome{profile?.first_name ? `, ${profile.first_name}` : ""} to the Bay Legal Knowledge Hub — your go-to place for policies, forms, and helpful resources designed to support you every day.
+              </p>
+            </div>
+            {/* Clockify Widget - 1 column */}
+            <div className="lg:col-span-1">
+              <ClockifyWidget compact={true} />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -150,17 +159,9 @@ export default function Dashboard() {
         <BirthdaysAnniversariesWidget />
       </section>
 
-      {/* Two Column Layout: Clockify + Resources */}
+      {/* Resources - Full Width */}
       <section className="container py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Clockify Widget - Left Column */}
-          <div className="lg:col-span-1">
-            <ClockifyWidget />
-          </div>
-
-          {/* Resources - Right Column */}
-          <div className="lg:col-span-2">
-            <Card className="h-full bg-[hsl(220,50%,12%)]">
+        <Card className="bg-[hsl(220,50%,12%)]">
               <CardHeader className="pb-4">
                 <CardTitle className="text-2xl font-light text-primary text-center">
                   YOUR RESOURCES
@@ -189,8 +190,6 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
       </section>
 
       {/* ChatGPT + Google Reviews Row */}

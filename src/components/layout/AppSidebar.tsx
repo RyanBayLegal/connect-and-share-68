@@ -53,10 +53,11 @@ const mainNavItems = [
 ];
 
 export function AppSidebar() {
-  const { profile, isAdmin, hasRole, isSuperAdmin, signOut } = useAuth();
+  const { profile, isAdmin, hasRole, isSuperAdmin, signOut, roles } = useAuth();
   const location = useLocation();
 
-  // Access checks
+  // Access checks - ensure roles are loaded before evaluating
+  const rolesLoaded = roles.length > 0;
   const departmentName = profile?.department?.name?.toLowerCase() || "";
   const isHRDepartment = departmentName.includes("hr") || departmentName.includes("human resources");
   const isTrainingDepartment = departmentName.includes("training");
