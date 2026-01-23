@@ -154,19 +154,20 @@ export default function Dashboard() {
           <div className="w-24 h-0.5 bg-primary/30 mx-auto mb-10" />
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-4xl mx-auto">
-            {resourceCards.map((resource) => (
+            {resourceCards.map((resource, index) => (
               <Link
                 key={resource.href}
                 to={resource.href}
-                className="group flex flex-col items-center text-center p-6 rounded-lg transition-all hover:bg-white/5"
+                className="group flex flex-col items-center text-center p-6 rounded-xl transition-all duration-300 hover:bg-white/10 hover:-translate-y-2 stagger-item focus-ring"
+                style={{ animationFillMode: 'forwards' }}
               >
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary/20 flex items-center justify-center mb-4 group-hover:bg-primary/30 transition-colors">
-                  <resource.icon className="h-10 w-10 md:h-12 md:w-12 text-primary" />
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary/20 flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-primary/40 group-hover:scale-110 group-hover:shadow-[0_0_30px_hsl(210,80%,45%,0.4)]">
+                  <resource.icon className="h-10 w-10 md:h-12 md:w-12 text-primary transition-transform duration-300 group-hover:scale-110" />
                 </div>
-                <span className="text-primary font-medium text-sm md:text-base tracking-wide">
+                <span className="text-primary font-medium text-sm md:text-base tracking-wide transition-colors group-hover:text-accent">
                   {resource.title}
                 </span>
-                <span className="text-muted-foreground text-xs mt-1 hidden md:block">
+                <span className="text-muted-foreground text-xs mt-1 hidden md:block transition-colors group-hover:text-white/70">
                   {resource.description}
                 </span>
               </Link>
@@ -177,20 +178,20 @@ export default function Dashboard() {
 
       {/* Recent Announcements */}
       <section className="container py-12">
-        <Card>
+        <Card className="card-interactive">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
+                <Bell className="h-5 w-5 text-primary icon-pulse" />
                 Recent Announcements
               </CardTitle>
               <CardDescription>
                 Stay updated with the latest company news
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild className="btn-shine group">
               <Link to="/announcements">
-                View All <ArrowRight className="ml-2 h-4 w-4" />
+                View All <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
           </CardHeader>
@@ -201,10 +202,11 @@ export default function Dashboard() {
               </p>
             ) : (
               <div className="space-y-4">
-                {recentAnnouncements.map((announcement) => (
+                {recentAnnouncements.map((announcement, index) => (
                   <div
                     key={announcement.id}
-                    className="flex items-start gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                    className="flex items-start gap-4 p-4 rounded-lg border bg-card transition-all duration-300 hover:bg-muted/50 hover:border-primary/30 hover:shadow-md hover:-translate-x-1 cursor-pointer stagger-item"
+                    style={{ animationFillMode: 'forwards' }}
                   >
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={announcement.author?.avatar_url || undefined} />
