@@ -1,160 +1,297 @@
 
 
-# Bay Legal Branding Implementation Plan
+# Implementation Plan: Page Transitions + Policy Versioning System
 
-Based on the uploaded reference images and logo, I will transform the intranet to match Bay Legal's professional corporate identity with their signature navy blue color scheme.
-
----
-
-## Color Scheme Extracted from Reference
-
-The Bay Legal design uses a distinctive color palette:
-
-| Color | HSL Value | Usage |
-|-------|-----------|-------|
-| Deep Navy | 220 60% 15% | Primary backgrounds, sidebar |
-| Medium Blue | 210 80% 45% | Primary buttons, links, accents |
-| Light Blue | 210 70% 60% | Headings, hover states |
-| Gold/Amber | 45 90% 55% | Accent highlights, badges |
-| White | 0 0% 100% | Text on dark backgrounds |
-| Light Gray | 220 15% 95% | Content backgrounds |
+This plan adds smooth page transitions between routes and enhances the Knowledge Base (Wiki) with full policy management, versioning, and author/date tracking.
 
 ---
 
-## Files to Modify
+## Overview
 
-### 1. Logo and Branding Assets
-- Copy the Bay Legal "B" logo to `src/assets/bay-legal-logo.webp`
-- Add logo to sidebar header and login page
+| Feature | Description |
+|---------|-------------|
+| Page Transitions | Smooth fade/slide animations when navigating between pages |
+| Policy Management | Create, edit, and manage knowledge base articles/policies |
+| Versioning System | Track version history with changes, dates, and authors |
+| Enhanced UI | View version history, compare versions, restore previous versions |
 
-### 2. src/lib/constants.ts
-- Update `APP_NAME` from "IntraConnect" to "Bay Legal Hub"
-- Add company description constant
+---
 
-### 3. index.html
-- Update page title to "Bay Legal Hub"
-- Update meta descriptions and og tags
+## Part 1: Smooth Page Transitions
 
-### 4. src/index.css (Design System)
-Update CSS variables to Bay Legal colors:
+### Approach
+Install `framer-motion` and create a page transition wrapper component that animates route changes.
+
+### New Files
+
+**src/components/layout/PageTransition.tsx**
+- Wrapper component using framer-motion's `motion` and `AnimatePresence`
+- Fade-in and slide-up animation on page enter
+- Smooth fade-out on page exit
+- Uses `useLocation` from react-router-dom as animation key
+
+### Modified Files
+
+**src/components/layout/AppLayout.tsx**
+- Wrap `{children}` with `PageTransition` component
+- Import and integrate the transition wrapper
+
+**package.json**
+- Add `framer-motion` dependency
+
+---
+
+## Part 2: Database Schema for Policy Versioning
+
+### New Table: `wiki_article_versions`
+
+Stores the complete history of all article changes:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| article_id | uuid | Reference to wiki_articles |
+| version_number | integer | Sequential version (1, 2, 3...) |
+| title | text | Article title at this version |
+| content | text | Full article content at this version |
+| change_summary | text | What changed (optional) |
+| edited_by | uuid | Profile ID of editor |
+| created_at | timestamp | When this version was saved |
+
+### Modified Table: `wiki_articles`
+
+Add new columns to track versioning metadata:
+
+| New Column | Type | Default | Description |
+|------------|------|---------|-------------|
+| current_version | integer | 1 | Current version number |
+| last_edited_by | uuid | null | Last editor's profile ID |
+| article_type | text | 'article' | Type: 'article' or 'policy' |
+
+### RLS Policies for `wiki_article_versions`
+- Admins can manage all versions
+- Authenticated users can view versions of published articles
+
+---
+
+## Part 3: Enhanced Wiki Page with Policy Management
+
+### New Features in Wiki.tsx
+
+**1. Article Type Filter**
+- Filter by "All", "Articles", or "Policies"
+- Visual distinction between types (policies have a shield badge)
+
+**2. Enhanced Create/Edit Dialog**
+- Article type selector (Article vs Policy)
+- Change summary field when editing
+- Rich form with all metadata fields
+
+**3. Version History Panel**
+- "View History" button on each article
+- Shows all versions with:
+  - Version number
+  - Date/time of change
+  - Editor name
+  - Change summary
+- "Restore" option to revert to previous version
+- "Compare" option to see differences (optional, future enhancement)
+
+**4. Article Detail View Enhancements**
+- Display current version number
+- Show "Last edited by [Name] on [Date]"
+- Badge for "Policy" vs "Article" type
+- Version history access button
+
+### UI Mockup: Version History Dialog
 
 ```text
-Light Mode:
-- --background: Light gray-blue (220 20% 98%)
-- --foreground: Deep navy (220 60% 15%)
-- --primary: Medium blue (210 80% 45%)
-- --primary-foreground: White
-- --secondary: Light blue (210 30% 92%)
-- --accent: Gold/amber (45 90% 55%)
-- --sidebar-background: Deep navy (220 60% 15%)
-- --sidebar-foreground: White
-- --sidebar-primary: Light blue (210 70% 60%)
-
-Dark Mode:
-- --background: Very dark navy (220 60% 8%)
-- --sidebar-background: Near-black navy (220 60% 6%)
-- Adjusted accent colors for contrast
++------------------------------------------+
+|  Version History: [Article Title]        |
++------------------------------------------+
+|                                          |
+|  v3 (Current)              Jan 15, 2026  |
+|  Edited by: Ryan Smith                   |
+|  "Updated compliance section"            |
+|                                [Restore] |
+|  ----------------------------------------|
+|  v2                        Jan 10, 2026  |
+|  Edited by: Jane Doe                     |
+|  "Added new procedures"                  |
+|                                [Restore] |
+|  ----------------------------------------|
+|  v1                        Jan 5, 2026   |
+|  Created by: Ryan Smith                  |
+|  "Initial version"                       |
+|                                          |
++------------------------------------------+
 ```
-
-### 5. src/components/layout/AppSidebar.tsx
-- Replace text logo "IC" with actual Bay Legal logo image
-- Style header to match the navy theme with logo
-- Adjust avatar fallback colors to match brand
-
-### 6. src/pages/Login.tsx
-- Add Bay Legal logo prominently
-- Style with navy blue gradient background matching reference
-- Update welcome text to "Bay Legal Knowledge Hub"
-- Add diamond geometric pattern background (like reference)
-
-### 7. src/pages/Dashboard.tsx
-- Add welcome banner with Bay Legal branding
-- Update stat card colors to use brand palette
-- Add subtle geometric patterns matching reference design
 
 ---
 
-## Visual Changes Summary
+## Part 4: Implementation Details
 
-### Before (Current Generic)
-- Gray/neutral color scheme
-- Generic "IC" logo placeholder
-- Standard corporate styling
+### File Changes Summary
 
-### After (Bay Legal Branded)
-- Deep navy sidebar with white text
-- "B" logo in sidebar and login
-- Light blue accent colors for links/buttons
-- Gold accents for important highlights
-- Professional legal firm aesthetic
-- Diamond geometric background patterns (matching reference)
+| File | Action | Description |
+|------|--------|-------------|
+| `package.json` | Modify | Add framer-motion |
+| `src/components/layout/PageTransition.tsx` | Create | Page transition wrapper |
+| `src/components/layout/AppLayout.tsx` | Modify | Integrate PageTransition |
+| `supabase/migrations/` | Create | Add versioning tables |
+| `src/types/database.ts` | Modify | Add WikiArticleVersion type |
+| `src/pages/Wiki.tsx` | Modify | Add policy management, versioning UI |
+| `src/components/wiki/VersionHistoryDialog.tsx` | Create | Version history component |
+| `src/components/wiki/ArticleFormDialog.tsx` | Create | Create/Edit article dialog |
 
----
+### Database Migration SQL
 
-## Technical Details
+```sql
+-- Add versioning columns to wiki_articles
+ALTER TABLE wiki_articles 
+ADD COLUMN current_version integer NOT NULL DEFAULT 1,
+ADD COLUMN last_edited_by uuid REFERENCES profiles(id),
+ADD COLUMN article_type text NOT NULL DEFAULT 'article';
 
-### Logo Integration
-```tsx
-// AppSidebar.tsx - Header section
-<SidebarHeader className="bg-[hsl(220,60%,15%)] border-b border-white/10 px-4 py-4">
-  <div className="flex items-center gap-3">
-    <img 
-      src="/assets/bay-legal-logo.webp" 
-      alt="Bay Legal" 
-      className="h-10 w-10 rounded"
-    />
-    <div>
-      <span className="text-lg font-semibold text-white">Bay Legal</span>
-      <span className="text-xs text-white/70 block">Knowledge Hub</span>
-    </div>
-  </div>
-</SidebarHeader>
+-- Create versions table
+CREATE TABLE wiki_article_versions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  article_id uuid NOT NULL REFERENCES wiki_articles(id) ON DELETE CASCADE,
+  version_number integer NOT NULL,
+  title text NOT NULL,
+  content text NOT NULL,
+  change_summary text,
+  edited_by uuid REFERENCES profiles(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(article_id, version_number)
+);
+
+-- Enable RLS
+ALTER TABLE wiki_article_versions ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Admins can manage versions"
+  ON wiki_article_versions FOR ALL
+  USING (is_admin(auth.uid()))
+  WITH CHECK (is_admin(auth.uid()));
+
+CREATE POLICY "Users can view versions of published articles"
+  ON wiki_article_versions FOR SELECT
+  USING (
+    article_id IN (
+      SELECT id FROM wiki_articles WHERE is_published = true
+    )
+    OR is_admin(auth.uid())
+  );
 ```
 
-### Login Page Hero
+### PageTransition Component
+
 ```tsx
-// Login.tsx - Background with diamond pattern
-<div className="min-h-screen flex items-center justify-center 
-  bg-gradient-to-br from-[hsl(220,60%,15%)] to-[hsl(210,80%,25%)]
-  relative overflow-hidden">
-  {/* Diamond pattern overlay */}
-  <div className="absolute inset-0 opacity-10" 
-    style={{backgroundImage: 'url(...diamond-pattern...)'}} />
+import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
+
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  in: { opacity: 1, y: 0 },
+  out: { opacity: 0, y: -20 }
+};
+
+const pageTransition = {
+  type: "tween",
+  ease: "anticipate",
+  duration: 0.3
+};
+
+export function PageTransition({ children }) {
+  const location = useLocation();
   
-  {/* Login card */}
-  <Card className="relative z-10 w-full max-w-md">
-    <img src={logo} alt="Bay Legal" className="h-16 mx-auto mb-4" />
-    <h1 className="text-2xl font-bold">Bay Legal, PC Hub</h1>
-    <p>Your Knowledge Base for Policies, Resources, and Support</p>
-    {/* ... form ... */}
-  </Card>
-</div>
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial="initial"
+        animate="in"
+        exit="out"
+        variants={pageVariants}
+        transition={pageTransition}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 ```
 
-### CSS Variables Update (excerpt)
-```css
-:root {
-  --background: 220 20% 98%;
-  --foreground: 220 60% 15%;
-  --primary: 210 80% 45%;
-  --primary-foreground: 0 0% 100%;
-  --accent: 45 90% 55%;
-  --sidebar-background: 220 60% 15%;
-  --sidebar-foreground: 0 0% 100%;
-  --sidebar-primary: 210 70% 60%;
+### New TypeScript Type
+
+```ts
+// src/types/database.ts
+export interface WikiArticleVersion {
+  id: string;
+  article_id: string;
+  version_number: number;
+  title: string;
+  content: string;
+  change_summary: string | null;
+  edited_by: string | null;
+  created_at: string;
+  editor?: Profile;
+}
+
+// Update WikiArticle interface
+export interface WikiArticle {
+  // ... existing fields
+  current_version: number;
+  last_edited_by: string | null;
+  article_type: 'article' | 'policy';
+  last_editor?: Profile;
 }
 ```
 
 ---
 
-## Implementation Order
+## Part 5: User Workflow
 
-1. Copy logo to assets folder
-2. Update constants (APP_NAME, descriptions)
-3. Update index.html meta tags
-4. Update CSS variables in src/index.css
-5. Redesign Login page with Bay Legal branding
-6. Update AppSidebar with logo and navy styling
-7. Adjust Dashboard welcome section
-8. Test all pages for visual consistency
+### Creating a New Policy
+
+1. Admin clicks "New Article" button
+2. Selects "Policy" as article type
+3. Fills in title, content, category
+4. Clicks "Publish"
+5. System creates article with version 1
+
+### Editing an Existing Policy
+
+1. Admin opens article detail
+2. Clicks "Edit" button
+3. Makes changes to content
+4. Enters change summary (e.g., "Updated compliance requirements")
+5. Clicks "Save"
+6. System:
+   - Saves current version to `wiki_article_versions`
+   - Updates article with new content
+   - Increments `current_version`
+   - Updates `last_edited_by` and `updated_at`
+
+### Viewing Version History
+
+1. User opens article detail
+2. Clicks "Version History" button
+3. Dialog shows all versions with:
+   - Version number
+   - Editor name
+   - Date
+   - Change summary
+4. Admin can click "Restore" to revert to any version
+
+---
+
+## Benefits
+
+- **Audit Trail**: Complete history of all policy changes
+- **Accountability**: Track who made each change and when
+- **Rollback**: Easy restoration of previous versions
+- **Compliance**: Essential for legal firms tracking policy updates
+- **Smooth UX**: Professional page transitions enhance feel
 
