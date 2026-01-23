@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Camera, Loader2, Plus } from "lucide-react";
 import type { Department, AppRole, Profile } from "@/types/database";
+import { ManagerSelect } from "@/components/directory/ManagerSelect";
 
 interface AddMemberDialogProps {
   open: boolean;
@@ -324,23 +325,12 @@ export function AddMemberDialog({
           {/* Reports To (Manager) */}
           <div className="space-y-2">
             <Label>Reports To</Label>
-            <Select 
-              value={managerId || "none"} 
-              onValueChange={(v) => setManagerId(v === "none" ? null : v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select manager" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Manager</SelectItem>
-                {employees.map((emp) => (
-                  <SelectItem key={emp.id} value={emp.id}>
-                    {emp.first_name} {emp.last_name}
-                    {emp.department?.name && ` (${emp.department.name})`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ManagerSelect
+              value={managerId}
+              onValueChange={setManagerId}
+              employees={employees}
+              placeholder="Select manager"
+            />
           </div>
 
           {/* Job Title */}
