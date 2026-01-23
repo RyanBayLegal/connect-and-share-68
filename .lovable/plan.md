@@ -1,8 +1,8 @@
 
 
-# Implementation Plan: Task Notifications, Dashboard Widget, and Task Comments
+# Implementation Plan: Directory Enhancements
 
-This plan covers email notifications for task due dates and assignment changes, a dashboard widget for upcoming and overdue tasks, and task comments with activity history.
+This plan covers adding profile photo uploads in the directory, an admin "Add Member" button for creating new employees, and adding proper page margins.
 
 ---
 
@@ -10,207 +10,178 @@ This plan covers email notifications for task due dates and assignment changes, 
 
 | Feature | Description |
 |---------|-------------|
-| Email Notifications | Send reminders for due dates and notify users when assigned to tasks |
-| Dashboard Widget | Show upcoming due dates and overdue tasks on the main dashboard |
-| Task Comments | Allow users to add comments and track activity on tasks |
+| Profile Photo Upload | Enable photo uploads when viewing/editing employee profiles in the directory |
+| Add Member Button | Admin-only button to create new employee profiles directly from directory |
+| Page Margins | Add consistent padding/margins to page content that's currently too close to edges |
 
 ---
 
-## Part 1: Database Schema Changes
+## Part 1: Page Margins Fix
 
-### New Tables Required
+### Problem
+The Directory page content is too close to the edges because it uses `space-y-6` without any horizontal padding or container.
 
-**1. `task_comments` - Store comments on tasks**
+### Solution
+Wrap the Directory page content in a container with proper padding, matching the pattern used in other pages like Dashboard (which uses `container` class for sections).
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| task_id | uuid | Reference to task |
-| author_id | uuid | User who wrote the comment |
-| content | text | Comment text |
-| created_at | timestamptz | When comment was added |
-| updated_at | timestamptz | Last edit time |
-
-**2. `task_activity` - Track all task changes**
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| task_id | uuid | Reference to task |
-| user_id | uuid | User who made the change |
-| action | text | Type of action (created, assigned, status_changed, etc.) |
-| old_value | text | Previous value |
-| new_value | text | New value |
-| created_at | timestamptz | When action occurred |
-
-**RLS Policies:**
-- Users can view comments/activity for tasks in accessible projects
-- Users can create comments on accessible tasks
-- Users can edit/delete their own comments
+### Changes to `src/pages/Directory.tsx`
+- Add `px-4 md:px-6 lg:px-8 py-6` to the main wrapper div
+- Or wrap content in a container class for consistency
 
 ---
 
-## Part 2: Email Notifications
+## Part 2: Profile Photo Upload in Directory
+
+### Current State
+- The Settings page already has avatar upload functionality using the `avatars` storage bucket
+- The code uploads to `{user_id}/avatar.{ext}` path
+- The bucket is public (verified in storage-buckets config)
 
 ### Approach
-Create edge functions to send emails via Resend for:
-1. Task assignment notifications (immediate)
-2. Due date reminders (scheduled via cron)
+Add a photo upload option to the employee detail dialog, but only for:
+1. The logged-in user viewing their own profile
+2. Admins viewing any profile
 
-### Connector Required
-The Resend connector needs to be connected to enable email sending. This will provide the `RESEND_API_KEY` secret.
+### Changes to `src/pages/Directory.tsx`
 
-### Edge Functions to Create
+**1. Import additions:**
+- Import `useAuth` hook to check current user and admin status
+- Import `Camera` icon from lucide-react
+- Import `toast` from sonner
 
-**1. `send-task-notification`**
-- Triggered when a task is assigned or due date changes
-- Sends immediate email to assignee
-- Includes task title, description, due date, and link to task
+**2. Add state for upload:**
+```typescript
+const [isAvatarLoading, setIsAvatarLoading] = useState(false);
+```
 
-**2. `check-due-reminders` (scheduled)**
-- Runs daily via pg_cron
-- Finds tasks due within 24 hours and 3 days
-- Sends reminder emails to assignees
-- Tracks sent reminders to avoid duplicates
+**3. Add upload handler function:**
+- Reuse the same pattern from Settings.tsx
+- Upload to `avatars` bucket at `{user_id}/avatar.{ext}`
+- Update the profile's `avatar_url` field
+- Refresh the employee list after upload
 
-### Database Trigger
-Create a trigger on the `tasks` table to:
-- Detect when `assignee_id` changes
-- Detect when `due_date` changes
-- Call notification edge function via pg_net
-
----
-
-## Part 3: Dashboard Widget - Upcoming & Overdue Tasks
-
-### Location
-Add a new card to `src/pages/Dashboard.tsx` below the announcements section.
-
-### Features
-- **Overdue Tasks**: Red highlighting, sorted by most overdue first
-- **Due Today**: Yellow/amber highlighting
-- **Due This Week**: Regular styling
-- Shows task title, project name, due date
-- Quick link to task (navigates to Tasks page with project selected)
-- Maximum 10 tasks displayed with "View All" link
-
-### Data Fetching
-Query tasks where:
-- `assignee_id` matches current user's profile ID OR
-- `created_by` matches current user's profile ID
-- `due_date` is not null
-- `status` is not "done"
-- Order by due_date ascending
+**4. Modify the employee detail dialog:**
+- Add camera icon overlay on avatar (like Settings page)
+- Show only when viewing own profile or when user is admin
+- Handle file input and trigger upload
 
 ---
 
-## Part 4: Task Comments & Activity
+## Part 3: Add Member Button (Admin Only)
 
-### UI Components
+### Current State
+- The `AdminUsers` component in `/admin` page already has full user creation functionality
+- It creates auth user via `supabase.auth.signUp` and then creates profile and role records
 
-**1. Task Detail Panel (New Component)**
-- Slide-out panel or modal when clicking a task card
-- Shows full task details
-- Tabbed interface: Details | Comments | Activity
+### Approach
+Create a reusable "Add Member" dialog component that can be used in the Directory page for admins.
 
-**2. Comments Section**
-- List of comments with author avatar, name, timestamp
-- Rich text input for new comments
-- Edit/delete own comments
-- Relative timestamps ("2 hours ago")
+### New Component: `src/components/directory/AddMemberDialog.tsx`
 
-**3. Activity Timeline**
-- Chronological list of all task changes
-- Shows who made what change and when
-- Icons for different action types:
-  - Created
-  - Assigned
-  - Status changed
-  - Priority changed
-  - Due date changed
-  - Comment added
+**Features:**
+- Form fields: First Name, Last Name, Email, Temporary Password
+- Optional fields: Department, Role, Job Title, Phone, Location
+- Department dropdown populated from departments table
+- Role dropdown with available roles
+- Avatar upload option in the form
 
-### Activity Tracking
-Automatically log when:
-- Task is created
-- Assignee changes
-- Status changes
-- Priority changes
-- Due date changes
-- Comments are added/edited/deleted
+**Form Flow:**
+1. Create auth user with email + password
+2. Create profile record with all details
+3. Assign role in user_roles table
+4. Optionally upload avatar if provided
+5. Show success message and refresh directory
+
+### Changes to `src/pages/Directory.tsx`
+
+**1. Import the new dialog component**
+
+**2. Add "Add Member" button next to the search/filter controls:**
+- Only visible when `isAdmin()` returns true
+- Uses Plus icon
+- Triggers the AddMemberDialog
+
+**3. Pass refresh callback to dialog:**
+- When a new member is created, refetch the employee list
 
 ---
 
 ## Implementation Summary
 
-### Database Changes
-
-| Change | Purpose |
-|--------|---------|
-| Create `task_comments` table | Store task comments |
-| Create `task_activity` table | Track all task changes |
-| Add `task_reminders_sent` table | Track sent reminders |
-| Create trigger on `tasks` | Log activity on changes |
-
-### Edge Functions
-
-| Function | Purpose |
-|----------|---------|
-| `send-task-notification` | Send immediate assignment/update emails |
-| `check-due-reminders` | Daily cron to send due date reminders |
-
 ### Files to Create
 
 | File | Purpose |
 |------|---------|
-| `src/components/tasks/TaskDetailPanel.tsx` | Full task detail with comments/activity |
-| `src/components/tasks/TaskComments.tsx` | Comments list and input |
-| `src/components/tasks/TaskActivity.tsx` | Activity timeline |
-| `src/components/dashboard/TasksDueWidget.tsx` | Dashboard widget for due tasks |
-| `supabase/functions/send-task-notification/index.ts` | Email notification function |
-| `supabase/functions/check-due-reminders/index.ts` | Scheduled reminder function |
+| `src/components/directory/AddMemberDialog.tsx` | Dialog form for creating new employee profiles |
 
 ### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/Dashboard.tsx` | Add TasksDueWidget component |
-| `src/pages/Tasks.tsx` | Add TaskDetailPanel integration |
-| `src/components/tasks/TaskCard.tsx` | Add click handler to open detail panel |
+| `src/pages/Directory.tsx` | Add margins, photo upload in detail dialog, Add Member button |
 
 ---
 
-## Technical Considerations
+## UI/UX Details
 
-### Email Notifications
-- Requires Resend connector to be connected
-- Emails sent from verified domain (or Resend test domain during development)
-- Include unsubscribe/preferences link in emails
-- Rate limiting to prevent spam
+### Add Member Dialog Layout
+```
++----------------------------------+
+|     Create New Team Member       |
++----------------------------------+
+| [Avatar Upload Area]             |
+|                                  |
+| First Name*     Last Name*       |
+| [___________]   [___________]    |
+|                                  |
+| Email*                           |
+| [_____________________________]  |
+|                                  |
+| Temporary Password*              |
+| [_____________________________]  |
+|                                  |
+| Department        Role           |
+| [Select v]        [Select v]     |
+|                                  |
+| Job Title                        |
+| [_____________________________]  |
+|                                  |
+| Phone             Location       |
+| [___________]     [___________]  |
+|                                  |
+|          [Cancel]  [Create]      |
++----------------------------------+
+```
 
-### Due Date Reminders
-- Send 3 days before due date (if not done)
-- Send 1 day before due date (if not done)
-- Send on due date morning (if not done)
-- Track sent reminders to avoid duplicates
+### Photo Upload in Detail Dialog
+- Camera icon appears on hover over avatar (for self or admin)
+- Click opens file picker
+- Shows loading spinner during upload
+- Avatar updates immediately after success
 
-### Activity Logging
-- Use database trigger for automatic logging
-- Captures all changes regardless of frontend
-- Efficient querying with proper indexes
-
-### Performance
-- Paginate comments and activity (load more on scroll)
-- Index `task_id` and `created_at` columns
-- Use realtime subscriptions for live updates
+### Page Margins
+- Consistent horizontal padding: `px-4 md:px-6 lg:px-8`
+- Vertical padding: `py-6`
+- Content doesn't touch screen edges
 
 ---
 
-## Dependency: Resend Connector
+## Technical Notes
 
-For email notifications to work, the Resend connector must be connected. This will:
-1. Prompt you to enter or create a Resend API key
-2. Automatically inject `RESEND_API_KEY` into edge functions
+### Security Considerations
+- Only admins can access Add Member functionality (enforced by `isAdmin()` check)
+- Profile RLS policies already allow admins to manage profiles
+- Users can only upload their own avatar (or admins can upload for anyone)
+- Email verification can be skipped since these are admin-created accounts
 
-Without this, email features will be disabled but all other features will work.
+### Avatar Storage
+- Uses existing public `avatars` bucket
+- Path format: `{user_id}/avatar.{extension}`
+- Upsert mode to replace existing avatars
+- Public URL stored in `profiles.avatar_url`
+
+### Dependencies
+- Uses existing Supabase client and storage
+- No new packages required
+- Reuses patterns from Settings.tsx and AdminUsers.tsx
 
