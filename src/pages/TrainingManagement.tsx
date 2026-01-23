@@ -1,7 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { AdminTraining } from "@/components/admin/AdminTraining";
-import { GraduationCap } from "lucide-react";
+import { TrainingAnalytics } from "@/components/admin/TrainingAnalytics";
+import { GraduationCap, BarChart3, BookOpen } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function TrainingManagement() {
   const { profile, hasRole, isSuperAdmin } = useAuth();
@@ -29,7 +31,27 @@ export default function TrainingManagement() {
           </p>
         </div>
       </div>
-      <AdminTraining />
+
+      <Tabs defaultValue="analytics">
+        <TabsList>
+          <TabsTrigger value="analytics" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="courses" className="gap-2">
+            <BookOpen className="h-4 w-4" />
+            Courses & Enrollments
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="analytics" className="mt-6">
+          <TrainingAnalytics />
+        </TabsContent>
+
+        <TabsContent value="courses" className="mt-6">
+          <AdminTraining />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
