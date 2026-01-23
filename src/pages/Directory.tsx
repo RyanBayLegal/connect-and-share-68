@@ -1,5 +1,7 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,11 +21,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown } from "lucide-react";
+import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus } from "lucide-react";
 import type { Profile, Department } from "@/types/database";
 import { OrgChart } from "@/components/directory/OrgChart";
+import { AddMemberDialog } from "@/components/directory/AddMemberDialog";
 
 export default function Directory() {
+  const { user, isAdmin } = useAuth();
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,30 +35,88 @@ export default function Directory() {
   const [selectedEmployee, setSelectedEmployee] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list" | "dept" | "org">("grid");
+  const [isAvatarLoading, setIsAvatarLoading] = useState(false);
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchData = async () => {
+    try {
+      const [{ data: employeesData }, { data: departmentsData }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*, department:departments(*)")
+          .eq("is_active", true)
+          .order("first_name"),
+        supabase.from("departments").select("*").order("name"),
+      ]);
+
+      setEmployees((employeesData as unknown as Profile[]) || []);
+      setDepartments((departmentsData as unknown as Department[]) || []);
+    } catch (error) {
+      console.error("Error fetching directory data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [{ data: employeesData }, { data: departmentsData }] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("*, department:departments(*)")
-            .eq("is_active", true)
-            .order("first_name"),
-          supabase.from("departments").select("*").order("name"),
-        ]);
-
-        setEmployees((employeesData as unknown as Profile[]) || []);
-        setDepartments((departmentsData as unknown as Department[]) || []);
-      } catch (error) {
-        console.error("Error fetching directory data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
+
+  // Check if current user can edit the selected employee's avatar
+  const canEditAvatar = (employee: Profile) => {
+    if (!user) return false;
+    // User can edit their own avatar OR admin can edit anyone's
+    return employee.user_id === user.id || isAdmin();
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedEmployee || !e.target.files?.[0]) return;
+    
+    const file = e.target.files[0];
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${selectedEmployee.user_id}/avatar.${fileExt}`;
+
+    setIsAvatarLoading(true);
+
+    try {
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: `${publicUrlData.publicUrl}?t=${Date.now()}` })
+        .eq("id", selectedEmployee.id);
+
+      if (updateError) throw updateError;
+
+      toast.success("Avatar updated successfully!");
+      
+      // Refresh employee list and update selected employee
+      await fetchData();
+      setSelectedEmployee((prev) => 
+        prev ? { ...prev, avatar_url: `${publicUrlData.publicUrl}?t=${Date.now()}` } : null
+      );
+    } catch (error: any) {
+      console.error("Avatar upload error:", error);
+      toast.error(error.message || "Failed to upload avatar");
+    } finally {
+      setIsAvatarLoading(false);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+    }
+  };
 
   const filteredEmployees = employees.filter((employee) => {
     const matchesSearch =
@@ -335,13 +397,21 @@ export default function Directory() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 md:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Team Directory</h1>
-        <p className="text-muted-foreground mt-1">
-          Find and connect with colleagues across the organization
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Team Directory</h1>
+          <p className="text-muted-foreground mt-1">
+            Find and connect with colleagues across the organization
+          </p>
+        </div>
+        {isAdmin() && (
+          <Button onClick={() => setIsAddMemberOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Member
+          </Button>
+        )}
       </div>
 
       {/* Search, Filter, and View Mode Controls */}
@@ -425,15 +495,42 @@ export default function Directory() {
           {selectedEmployee && (
             <div className="space-y-6">
               <div className="flex flex-col items-center text-center">
-                <div className="rounded-full p-1 bg-gradient-to-br from-primary/20 to-accent/20">
-                  <Avatar className="h-24 w-24 ring-2 ring-background">
-                    <AvatarImage src={selectedEmployee.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                      {selectedEmployee.first_name[0]}
-                      {selectedEmployee.last_name[0]}
-                    </AvatarFallback>
-                  </Avatar>
+                {/* Avatar with upload option */}
+                <div className="relative group">
+                  <div className="rounded-full p-1 bg-gradient-to-br from-primary/20 to-accent/20">
+                    <Avatar className="h-24 w-24 ring-2 ring-background">
+                      <AvatarImage src={selectedEmployee.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                        {selectedEmployee.first_name[0]}
+                        {selectedEmployee.last_name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  
+                  {/* Camera overlay for editable avatars */}
+                  {canEditAvatar(selectedEmployee) && (
+                    <label
+                      htmlFor="avatar-input"
+                      className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    >
+                      {isAvatarLoading ? (
+                        <Loader2 className="h-6 w-6 text-white animate-spin" />
+                      ) : (
+                        <Camera className="h-6 w-6 text-white" />
+                      )}
+                    </label>
+                  )}
+                  <input
+                    ref={avatarInputRef}
+                    id="avatar-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    disabled={isAvatarLoading}
+                  />
                 </div>
+
                 <h3 className="text-xl font-semibold mt-4">
                   {selectedEmployee.first_name} {selectedEmployee.last_name}
                 </h3>
@@ -512,6 +609,14 @@ export default function Directory() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Add Member Dialog */}
+      <AddMemberDialog
+        open={isAddMemberOpen}
+        onOpenChange={setIsAddMemberOpen}
+        departments={departments}
+        onMemberAdded={fetchData}
+      />
     </div>
   );
 }
