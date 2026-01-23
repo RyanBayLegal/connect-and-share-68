@@ -1,7 +1,7 @@
 
-# Implementation Plan: Version Comparison, Rich Text Editor, Sample Data, and Departmental Views
+# Implementation Plan: Kanban Enhancements, Wiki Features, and Admin Role Assignment
 
-This plan adds four major features to enhance the wiki system and improve departmental resource organization.
+This plan covers drag-and-drop Kanban, PDF export for wiki articles, article templates, full-text search with highlighting, non-admin messaging, and assigning admin role to Ryan.
 
 ---
 
@@ -9,279 +9,249 @@ This plan adds four major features to enhance the wiki system and improve depart
 
 | Feature | Description |
 |---------|-------------|
-| Version Comparison | Side-by-side diff view showing what changed between article versions |
-| Rich Text Editor | TipTap-based WYSIWYG editor replacing plain textarea for wiki content |
-| Sample Data | Pre-populate wiki with articles/policies and create versions for testing |
-| Departmental Views | Add department filtering to wiki articles and a unified department dashboard |
+| Drag-and-Drop Kanban | Reorder tasks by dragging between columns and within columns |
+| PDF Export | Download wiki articles as formatted PDF documents |
+| Article Templates | Pre-defined templates for common policy and article formats |
+| Search Highlighting | Highlight matching terms in search results |
+| Non-Admin Message | Inform users that only admins can create/edit articles |
+| Role Assignment | Give Ryan (ryan@baylegal.com) super_admin role |
 
 ---
 
-## Part 1: Version Comparison View
+## Part 1: Assign Admin Role to Ryan
 
-### Approach
-Create a side-by-side comparison dialog that highlights additions, deletions, and changes between two versions using a text diff algorithm.
+A database insert to assign the `super_admin` role to Ryan.
 
-### New Files
-
-**src/components/wiki/VersionCompareDialog.tsx**
-- Modal showing two versions side-by-side
-- Highlight additions (green), deletions (red), and changes
-- Dropdown selectors to pick which two versions to compare
-- Uses a simple diff algorithm (word-level comparison)
-- Shows metadata: version numbers, editors, timestamps
-
-### Modified Files
-
-**src/components/wiki/VersionHistoryDialog.tsx**
-- Add "Compare" button on each version row
-- Track selected versions for comparison
-- Open VersionCompareDialog when comparing
-
-### UI Design
-
-```text
-+----------------------------------------------------------+
-|  Compare Versions                                        |
-+----------------------------------------------------------+
-|  v2 (Jan 10)                  v3 (Jan 15)               |
-|  Edited by: Jane Doe          Edited by: Ryan Smith      |
-+----------------------------------------------------------+
-|                                                          |
-|  [Left panel - v2]            [Right panel - v3]         |
-|                                                          |
-|  The company policy...        The company policy...      |
-|  -states that all             +requires all              |
-|  employees must...            employees to...            |
-|                                                          |
-+----------------------------------------------------------+
-|                                          [Close]         |
-+----------------------------------------------------------+
+**SQL to execute:**
+```sql
+INSERT INTO user_roles (user_id, role)
+VALUES ('57cb22e8-c27d-4450-9a58-619d55357209', 'super_admin');
 ```
 
 ---
 
-## Part 2: Rich Text Editor (TipTap)
+## Part 2: Non-Admin User Message
+
+Add an informational banner on the Wiki page for non-admin users explaining that only administrators can create and manage articles.
+
+**File to modify: `src/pages/Wiki.tsx`**
+
+Add below the header section when user is not admin:
+- Display an info banner with lock icon
+- Text: "Only administrators can create and edit Knowledge Base articles and policies."
+- Styled as a subtle, non-intrusive info box
+
+---
+
+## Part 3: Drag-and-Drop Kanban Board
 
 ### Approach
-Install TipTap and create a reusable rich text editor component with formatting toolbar.
+Install `@dnd-kit` library (modern, accessible drag-and-drop for React) and implement column-to-column task movement with position updates.
 
 ### Dependencies to Install
-- `@tiptap/react` - React bindings for TipTap
-- `@tiptap/starter-kit` - Common extensions (bold, italic, headings, lists)
-- `@tiptap/extension-placeholder` - Placeholder text support
-- `@tiptap/extension-link` - Link support
-- `@tiptap/extension-underline` - Underline formatting
+- `@dnd-kit/core` - Core drag-and-drop functionality
+- `@dnd-kit/sortable` - Sortable lists within columns
+- `@dnd-kit/utilities` - Utility functions
 
-### New Files
+### Files to Modify
 
-**src/components/ui/rich-text-editor.tsx**
-- Reusable TipTap editor component
-- Toolbar with: Bold, Italic, Underline, Strikethrough
-- Headings: H1, H2, H3
-- Lists: Bullet list, Numbered list
-- Links, Blockquotes, Code blocks
-- Clean, modern styling matching the app theme
+**src/pages/Tasks.tsx**
+- Wrap Kanban board with `DndContext`
+- Each column becomes a `SortableContext`
+- Task cards become `useSortable` draggable items
+- Add visual feedback during drag (shadow, opacity)
+- Handle `onDragEnd` to update task status and position
+- Batch update positions in database
 
-### Modified Files
-
-**src/components/wiki/ArticleFormDialog.tsx**
-- Replace `<Textarea>` with `<RichTextEditor>`
-- Handle HTML content instead of plain text
-- Add content preview toggle
-
-**src/pages/Wiki.tsx**
-- Render HTML content safely using `dangerouslySetInnerHTML`
-- Add proper prose styling for rendered content
-
-### Editor Toolbar
-
-```text
-+----------------------------------------------------------+
-| B | I | U | S | H1 | H2 | H3 | • | 1. | "" | </> | Link  |
-+----------------------------------------------------------+
-|                                                          |
-|  [Editor content area]                                   |
-|                                                          |
-+----------------------------------------------------------+
-```
+### UI Behavior
+- Drag task card → shows drag overlay
+- Drop in different column → changes status
+- Drop in same column → reorders position
+- Smooth animations during transitions
+- Cursor changes to grab/grabbing
 
 ---
 
-## Part 3: Sample Wiki Articles and Policies
+## Part 4: PDF Export for Wiki Articles
 
 ### Approach
-Insert sample data via the database to demonstrate the wiki and versioning system.
+Use `html2pdf.js` library to convert article HTML content to downloadable PDF with proper styling.
 
-### Sample Content Structure
+### Dependencies to Install
+- `html2pdf.js` - HTML to PDF conversion (client-side)
 
-**Wiki Categories** (if not existing)
-- Company Policies
-- HR Guidelines  
-- IT & Security
-- Getting Started
+### Files to Modify
 
-**Sample Policies (with versions)**
+**src/pages/Wiki.tsx**
+- Add "Export PDF" button in article detail dialog
+- Create `handleExportPdf` function that:
+  - Clones article content container
+  - Applies print-friendly styling
+  - Generates PDF with article title as filename
+  - Downloads automatically
 
-1. **Remote Work Policy** (3 versions)
-   - v1: Initial remote work guidelines
-   - v2: Added equipment requirements
-   - v3: Updated to include hybrid model
-
-2. **Code of Conduct** (2 versions)
-   - v1: Basic conduct rules
-   - v2: Added social media guidelines
-
-3. **Data Security Policy** (2 versions)
-   - v1: Initial security requirements
-   - v2: Added password policy updates
-
-**Sample Articles**
-
-1. **Welcome to Bay Legal** (Getting Started)
-2. **How to Submit Expense Reports** (HR Guidelines)
-3. **VPN Setup Guide** (IT & Security)
+### PDF Styling
+- Article title as header
+- Author and date metadata
+- Clean, readable body text
+- Page numbers at bottom
+- Bay Legal logo/header (optional)
 
 ---
 
-## Part 4: Departmental Views and Enhanced Department Management
+## Part 5: Article Templates
 
-### Existing Infrastructure
-The database already has:
-- `departments` table with RLS policies
-- `user_roles` table for role management
-- Department associations on: profiles, documents, events, projects, announcements
+### Approach
+Create a template system allowing admins to start new articles from pre-defined formats.
 
 ### Database Changes
 
-**Modify wiki_articles table:**
-Add `department_id` column to allow department-specific wiki articles/policies.
-
+**New table: `wiki_templates`**
 ```sql
-ALTER TABLE wiki_articles 
-ADD COLUMN department_id uuid REFERENCES departments(id);
+CREATE TABLE wiki_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  description text,
+  content text NOT NULL,
+  article_type text NOT NULL DEFAULT 'article',
+  category_id uuid REFERENCES wiki_categories(id),
+  created_by uuid,
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
 
--- Update RLS policy for department filtering
-CREATE POLICY "Users can view department articles"
-  ON wiki_articles FOR SELECT
-  USING (
-    is_published = true AND (
-      department_id IS NULL OR
-      department_id = get_user_department(auth.uid()) OR
-      is_admin(auth.uid())
-    )
-    OR author_id = get_profile_id(auth.uid())
-    OR is_admin(auth.uid())
-  );
+-- RLS: Admins can manage, all authenticated can view
+ALTER TABLE wiki_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can manage templates"
+  ON wiki_templates FOR ALL
+  USING (is_admin(auth.uid()));
+
+CREATE POLICY "Authenticated users can view templates"
+  ON wiki_templates FOR SELECT
+  USING (is_active = true);
 ```
+
+**Seed default templates:**
+- Policy Template (header, purpose, scope, procedure, enforcement)
+- SOP Template (objective, responsibilities, steps, references)
+- FAQ Template (question/answer format)
+- Guide Template (introduction, prerequisites, steps, troubleshooting)
+
+### Files to Create
+
+**src/components/wiki/TemplateSelector.tsx**
+- Dialog showing available templates
+- Preview of template content
+- "Use Template" button
+
+### Files to Modify
+
+**src/pages/Wiki.tsx**
+- Fetch templates alongside categories
+- Pass templates to ArticleFormDialog
+
+**src/components/wiki/ArticleFormDialog.tsx**
+- Add "Start from Template" button
+- Open TemplateSelector dialog
+- Populate content when template selected
+
+---
+
+## Part 6: Full-Text Search with Highlighting
+
+### Approach
+Implement search term highlighting in article cards and detail view, making it easy to see where matches occur.
 
 ### New Files
 
-**src/pages/DepartmentHub.tsx**
-- Central hub page showing department-specific resources
-- Sections: My Team, Documents, Wiki Articles, Announcements, Events
-- Department selector for admins to view other departments
-- Quick stats: team size, recent documents, open tasks
+**src/lib/highlightText.tsx**
+- Utility function to wrap matching text in highlight spans
+- Case-insensitive matching
+- Returns React elements with highlighted portions
 
-### Modified Files
+```typescript
+export function highlightText(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text;
+  const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+  const parts = text.split(regex);
+  return parts.map((part, i) => 
+    regex.test(part) ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-800">{part}</mark> : part
+  );
+}
+```
+
+### Files to Modify
 
 **src/pages/Wiki.tsx**
-- Add department filter dropdown
-- Show department badge on articles
-- Department selector when creating articles
+- Pass `searchQuery` to ArticleCard component
+- Use `highlightText` for title display
+- Highlight matching text in article preview
+- Highlight matches in full article content view
 
-**src/components/wiki/ArticleFormDialog.tsx**
-- Add department selector field
-- Option for "Company-wide" (null department) or specific department
-
-**src/App.tsx**
-- Add route for `/department` (DepartmentHub)
-
-**src/components/layout/AppSidebar.tsx**
-- Add "My Department" navigation item
-
-### UI Design: Department Hub
-
-```text
-+----------------------------------------------------------+
-|  Legal Department                    [Change Department] |
-|  12 team members                                         |
-+----------------------------------------------------------+
-|                                                          |
-|  +----------------+  +----------------+  +---------------+
-|  | Team Members   |  | Documents      |  | Policies     |
-|  | 12 active      |  | 24 files       |  | 8 articles   |
-|  | View All ->    |  | View All ->    |  | View All ->  |
-|  +----------------+  +----------------+  +---------------+
-|                                                          |
-|  Recent Documents                                        |
-|  +----------------------------------------------------+ |
-|  | Contract Template v2.docx           2 hours ago    | |
-|  | Client Onboarding Guide.pdf         Yesterday      | |
-|  +----------------------------------------------------+ |
-|                                                          |
-|  Department Announcements                                |
-|  +----------------------------------------------------+ |
-|  | Q1 Performance Review Deadlines     Jan 15, 2026   | |
-|  +----------------------------------------------------+ |
-+----------------------------------------------------------+
-```
+### UI Behavior
+- Yellow highlight on matching terms
+- Works in both card previews and detail view
+- Smooth visual indication of search matches
+- Dark mode compatible styling
 
 ---
 
 ## Implementation Summary
 
-### Files to Create
-| File | Purpose |
-|------|---------|
-| `src/components/wiki/VersionCompareDialog.tsx` | Side-by-side version comparison |
-| `src/components/ui/rich-text-editor.tsx` | TipTap WYSIWYG editor |
-| `src/pages/DepartmentHub.tsx` | Department-centric resource view |
-
-### Files to Modify
-| File | Changes |
-|------|---------|
-| `src/components/wiki/VersionHistoryDialog.tsx` | Add compare functionality |
-| `src/components/wiki/ArticleFormDialog.tsx` | Rich text editor, department field |
-| `src/pages/Wiki.tsx` | Department filter, HTML rendering |
-| `src/App.tsx` | Add DepartmentHub route |
-| `src/components/layout/AppSidebar.tsx` | Add department nav link |
-
 ### Database Changes
 | Change | Purpose |
 |--------|---------|
-| Add `department_id` to `wiki_articles` | Enable department-specific articles |
-| Insert sample wiki categories | Test data |
-| Insert sample articles with versions | Demonstrate versioning |
+| Insert role for Ryan | Enable admin access |
+| Create `wiki_templates` table | Store article templates |
+| Seed default templates | Provide starting templates |
 
 ### Dependencies to Install
 | Package | Purpose |
 |---------|---------|
-| `@tiptap/react` | TipTap React integration |
-| `@tiptap/starter-kit` | Common formatting extensions |
-| `@tiptap/extension-placeholder` | Placeholder text |
-| `@tiptap/extension-link` | Link support |
-| `@tiptap/extension-underline` | Underline formatting |
+| `@dnd-kit/core` | Drag-and-drop core |
+| `@dnd-kit/sortable` | Sortable lists |
+| `@dnd-kit/utilities` | DnD utilities |
+| `html2pdf.js` | PDF generation |
+
+### Files to Create
+| File | Purpose |
+|------|---------|
+| `src/components/wiki/TemplateSelector.tsx` | Template selection dialog |
+| `src/lib/highlightText.tsx` | Search highlighting utility |
+
+### Files to Modify
+| File | Changes |
+|------|---------|
+| `src/pages/Tasks.tsx` | Add drag-and-drop functionality |
+| `src/pages/Wiki.tsx` | PDF export, templates, highlighting, non-admin message |
+| `src/components/wiki/ArticleFormDialog.tsx` | Template selection integration |
 
 ---
 
 ## Technical Considerations
 
-### Rich Text Editor
-- Content stored as HTML in database
-- Sanitize HTML on render to prevent XSS
-- Provide backward compatibility for existing plain text content
+### Drag-and-Drop
+- Use `@dnd-kit` for accessibility compliance (keyboard support, screen readers)
+- Optimistic UI updates with database sync
+- Handle concurrent edits gracefully
+- Debounce position updates to reduce database calls
 
-### Version Comparison
-- Implement word-level diff for readable comparisons
-- Color coding: green for additions, red for deletions
-- Handle large content gracefully with scrollable panels
+### PDF Export
+- Client-side generation (no server needed)
+- Preserve rich text formatting
+- Handle long articles with page breaks
+- Include metadata (author, version, date)
 
-### Department Views
-- Leverage existing RLS policies that already use `get_user_department()`
-- Admins can view all departments
-- Regular users see only their department's resources
+### Article Templates
+- Templates are company-wide (not department-specific)
+- Only admins can create/edit templates
+- All authenticated users can use templates
+- Templates can be category-specific
 
-### Sample Data
-- Insert data respecting existing RLS policies
-- Use admin profile IDs for author references
-- Create realistic version history timestamps
+### Search Highlighting
+- Escape special regex characters in search query
+- Highlight in stripped HTML for previews
+- Highlight in rendered HTML for detail view
+- Performance-optimized for large result sets
