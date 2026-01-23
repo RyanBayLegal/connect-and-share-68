@@ -733,39 +733,96 @@ export type Database = {
         }
         Relationships: []
       }
+      wiki_article_versions: {
+        Row: {
+          article_id: string
+          change_summary: string | null
+          content: string
+          created_at: string
+          edited_by: string | null
+          id: string
+          title: string
+          version_number: number
+        }
+        Insert: {
+          article_id: string
+          change_summary?: string | null
+          content: string
+          created_at?: string
+          edited_by?: string | null
+          id?: string
+          title: string
+          version_number: number
+        }
+        Update: {
+          article_id?: string
+          change_summary?: string | null
+          content?: string
+          created_at?: string
+          edited_by?: string | null
+          id?: string
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wiki_article_versions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_article_versions_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wiki_articles: {
         Row: {
+          article_type: string
           author_id: string | null
           category_id: string | null
           content: string
           created_at: string
+          current_version: number
           id: string
           is_featured: boolean
           is_published: boolean
+          last_edited_by: string | null
           title: string
           updated_at: string
           view_count: number
         }
         Insert: {
+          article_type?: string
           author_id?: string | null
           category_id?: string | null
           content: string
           created_at?: string
+          current_version?: number
           id?: string
           is_featured?: boolean
           is_published?: boolean
+          last_edited_by?: string | null
           title: string
           updated_at?: string
           view_count?: number
         }
         Update: {
+          article_type?: string
           author_id?: string | null
           category_id?: string | null
           content?: string
           created_at?: string
+          current_version?: number
           id?: string
           is_featured?: boolean
           is_published?: boolean
+          last_edited_by?: string | null
           title?: string
           updated_at?: string
           view_count?: number
@@ -783,6 +840,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "wiki_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_articles_last_edited_by_fkey"
+            columns: ["last_edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

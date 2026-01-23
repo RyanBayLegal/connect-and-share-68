@@ -127,3 +127,43 @@ export interface Comment {
   updated_at: string;
   author?: Profile;
 }
+
+export interface WikiCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  position: number;
+  created_at: string;
+}
+
+export interface WikiArticle {
+  id: string;
+  title: string;
+  content: string;
+  category_id: string | null;
+  author_id: string | null;
+  is_published: boolean;
+  is_featured: boolean;
+  view_count: number;
+  current_version: number;
+  last_edited_by: string | null;
+  article_type: 'article' | 'policy';
+  created_at: string;
+  updated_at: string;
+  category?: WikiCategory;
+  author?: Profile;
+  last_editor?: Profile;
+}
+
+export interface WikiArticleVersion {
+  id: string;
+  article_id: string;
+  version_number: number;
+  title: string;
+  content: string;
+  change_summary: string | null;
+  edited_by: string | null;
+  created_at: string;
+  editor?: Profile;
+}

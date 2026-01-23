@@ -4,16 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -21,6 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   BookOpen,
   Search,
@@ -33,33 +30,14 @@ import {
   Rocket,
   HelpCircle,
   Star,
+  History,
+  Edit,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
-import type { Profile } from "@/types/database";
-
-interface WikiCategory {
-  id: string;
-  name: string;
-  description: string | null;
-  icon: string | null;
-  position: number;
-}
-
-interface WikiArticle {
-  id: string;
-  title: string;
-  content: string;
-  category_id: string | null;
-  author_id: string | null;
-  is_published: boolean;
-  is_featured: boolean;
-  view_count: number;
-  created_at: string;
-  updated_at: string;
-  category?: WikiCategory;
-  author?: Profile;
-}
+import { ArticleFormDialog } from "@/components/wiki/ArticleFormDialog";
+import { VersionHistoryDialog } from "@/components/wiki/VersionHistoryDialog";
+import type { WikiArticle, WikiCategory, Profile } from "@/types/database";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Shield,
@@ -75,17 +53,16 @@ export default function Wiki() {
   const [categories, setCategories] = useState<WikiCategory[]>([]);
   const [articles, setArticles] = useState<WikiArticle[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedArticle, setSelectedArticle] = useState<WikiArticle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Create article dialog
+  // Dialogs
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newContent, setNewContent] = useState("");
-  const [newCategory, setNewCategory] = useState("");
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<WikiArticle | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -112,34 +89,83 @@ export default function Wiki() {
     }
   };
 
-  const handleCreateArticle = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateArticle = async (data: {
+    title: string;
+    content: string;
+    category_id: string;
+    article_type: "article" | "policy";
+    is_featured: boolean;
+  }) => {
     if (!profile) return;
 
-    setIsSubmitting(true);
     try {
       const { error } = await supabase.from("wiki_articles").insert({
-        title: newTitle,
-        content: newContent,
-        category_id: newCategory || null,
+        title: data.title,
+        content: data.content,
+        category_id: data.category_id || null,
         author_id: profile.id,
         is_published: true,
-        is_featured: isFeatured,
+        is_featured: data.is_featured,
+        article_type: data.article_type,
+        current_version: 1,
+        last_edited_by: profile.id,
       });
 
       if (error) throw error;
 
-      toast.success("Article published!");
-      setIsCreateOpen(false);
-      setNewTitle("");
-      setNewContent("");
-      setNewCategory("");
-      setIsFeatured(false);
+      toast.success(`${data.article_type === "policy" ? "Policy" : "Article"} published!`);
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to create article");
-    } finally {
-      setIsSubmitting(false);
+      throw error;
+    }
+  };
+
+  const handleEditArticle = async (data: {
+    title: string;
+    content: string;
+    category_id: string;
+    article_type: "article" | "policy";
+    is_featured: boolean;
+    change_summary?: string;
+  }) => {
+    if (!profile || !editingArticle) return;
+
+    try {
+      // Save current version to history first
+      const { error: versionError } = await supabase.from("wiki_article_versions").insert({
+        article_id: editingArticle.id,
+        version_number: editingArticle.current_version,
+        title: editingArticle.title,
+        content: editingArticle.content,
+        change_summary: data.change_summary || null,
+        edited_by: profile.id,
+      });
+
+      if (versionError) throw versionError;
+
+      // Update the article
+      const { error: updateError } = await supabase
+        .from("wiki_articles")
+        .update({
+          title: data.title,
+          content: data.content,
+          category_id: data.category_id || null,
+          is_featured: data.is_featured,
+          article_type: data.article_type,
+          current_version: editingArticle.current_version + 1,
+          last_edited_by: profile.id,
+        })
+        .eq("id", editingArticle.id);
+
+      if (updateError) throw updateError;
+
+      toast.success("Changes saved!");
+      fetchData();
+      setSelectedArticle(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save changes");
+      throw error;
     }
   };
 
@@ -152,14 +178,26 @@ export default function Wiki() {
       .eq("id", article.id);
   };
 
+  const handleEditClick = (article: WikiArticle) => {
+    setEditingArticle(article);
+    setIsEditOpen(true);
+  };
+
+  const handleHistoryClick = (article: WikiArticle) => {
+    setEditingArticle(article);
+    setIsHistoryOpen(true);
+  };
+
   const filteredArticles = articles.filter((article) => {
     const matchesCategory =
       selectedCategory === "all" || article.category_id === selectedCategory;
+    const matchesType =
+      selectedType === "all" || article.article_type === selectedType;
     const matchesSearch =
       searchQuery === "" ||
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesType && matchesSearch;
   });
 
   const featuredArticles = filteredArticles.filter((a) => a.is_featured);
@@ -183,75 +221,10 @@ export default function Wiki() {
           </p>
         </div>
         {isAdmin() && (
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Article
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create Article</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleCreateArticle} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Select value={newCategory} onValueChange={setNewCategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2 flex items-end">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isFeatured}
-                        onChange={(e) => setIsFeatured(e.target.checked)}
-                      />
-                      <Star className="h-4 w-4 text-amber-500" />
-                      Featured article
-                    </label>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Content</Label>
-                  <Textarea
-                    value={newContent}
-                    onChange={(e) => setNewContent(e.target.value)}
-                    rows={10}
-                    required
-                    placeholder="Write your article content here..."
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Publishing..." : "Publish"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Article
+          </Button>
         )}
       </div>
 
@@ -266,6 +239,24 @@ export default function Wiki() {
             className="pl-10"
           />
         </div>
+        <Select value={selectedType} onValueChange={setSelectedType}>
+          <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectValue placeholder="All Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="article">
+              <span className="flex items-center gap-2">
+                <FileText className="h-3 w-3" /> Articles
+              </span>
+            </SelectItem>
+            <SelectItem value="policy">
+              <span className="flex items-center gap-2">
+                <Shield className="h-3 w-3" /> Policies
+              </span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="All Categories" />
@@ -282,7 +273,7 @@ export default function Wiki() {
       </div>
 
       {/* Categories Overview */}
-      {selectedCategory === "all" && searchQuery === "" && (
+      {selectedCategory === "all" && selectedType === "all" && searchQuery === "" && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => {
             const IconComponent = iconMap[category.icon || "FileText"] || FileText;
@@ -291,7 +282,7 @@ export default function Wiki() {
             return (
               <Card
                 key={category.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                className="cursor-pointer hover:shadow-md transition-all hover:-translate-y-1"
                 onClick={() => setSelectedCategory(category.id)}
               >
                 <CardHeader>
@@ -369,7 +360,13 @@ export default function Wiki() {
           {selectedArticle && (
             <>
               <DialogHeader>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  {selectedArticle.article_type === "policy" && (
+                    <Badge variant="default" className="bg-blue-600">
+                      <Shield className="h-3 w-3 mr-1" />
+                      Policy
+                    </Badge>
+                  )}
                   {selectedArticle.is_featured && (
                     <Badge variant="default" className="bg-amber-500">
                       <Star className="h-3 w-3 mr-1" />
@@ -379,18 +376,19 @@ export default function Wiki() {
                   {selectedArticle.category && (
                     <Badge variant="secondary">{selectedArticle.category.name}</Badge>
                   )}
+                  <Badge variant="outline" className="font-mono">
+                    v{selectedArticle.current_version}
+                  </Badge>
                 </div>
                 <DialogTitle className="text-2xl">{selectedArticle.title}</DialogTitle>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                   <span>
                     By {selectedArticle.author?.first_name} {selectedArticle.author?.last_name}
                   </span>
                   <span>•</span>
                   <span>
                     Updated{" "}
-                    {formatDistanceToNow(new Date(selectedArticle.updated_at), {
-                      addSuffix: true,
-                    })}
+                    {format(new Date(selectedArticle.updated_at), "MMM d, yyyy")}
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
@@ -398,6 +396,28 @@ export default function Wiki() {
                     {selectedArticle.view_count} views
                   </span>
                 </div>
+
+                {/* Action buttons for admins */}
+                {isAdmin() && (
+                  <div className="flex items-center gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditClick(selectedArticle)}
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleHistoryClick(selectedArticle)}
+                    >
+                      <History className="h-3 w-3 mr-1" />
+                      Version History
+                    </Button>
+                  </div>
+                )}
               </DialogHeader>
               <div className="prose prose-sm max-w-none mt-4">
                 <p className="whitespace-pre-wrap">{selectedArticle.content}</p>
@@ -406,6 +426,48 @@ export default function Wiki() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Create Article Dialog */}
+      <ArticleFormDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        categories={categories}
+        onSubmit={handleCreateArticle}
+      />
+
+      {/* Edit Article Dialog */}
+      {editingArticle && (
+        <ArticleFormDialog
+          open={isEditOpen}
+          onOpenChange={setIsEditOpen}
+          categories={categories}
+          isEditing
+          initialData={{
+            title: editingArticle.title,
+            content: editingArticle.content,
+            category_id: editingArticle.category_id || "",
+            article_type: editingArticle.article_type,
+            is_featured: editingArticle.is_featured,
+          }}
+          onSubmit={handleEditArticle}
+        />
+      )}
+
+      {/* Version History Dialog */}
+      {editingArticle && (
+        <VersionHistoryDialog
+          open={isHistoryOpen}
+          onOpenChange={setIsHistoryOpen}
+          articleId={editingArticle.id}
+          articleTitle={editingArticle.title}
+          currentVersion={editingArticle.current_version}
+          isAdmin={isAdmin()}
+          onRestore={() => {
+            fetchData();
+            setSelectedArticle(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -418,17 +480,30 @@ function ArticleCard({
   onView: () => void;
 }) {
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onView}>
+    <Card 
+      className="cursor-pointer hover:shadow-md transition-all hover:-translate-y-1" 
+      onClick={onView}
+    >
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">{article.title}</CardTitle>
-          {article.is_featured && <Star className="h-4 w-4 text-amber-500" />}
+          <div className="flex items-center gap-1">
+            {article.article_type === "policy" && (
+              <Shield className="h-4 w-4 text-blue-600" />
+            )}
+            {article.is_featured && <Star className="h-4 w-4 text-amber-500" />}
+          </div>
         </div>
-        {article.category && (
-          <Badge variant="secondary" className="w-fit">
-            {article.category.name}
+        <div className="flex items-center gap-2">
+          {article.category && (
+            <Badge variant="secondary" className="w-fit">
+              {article.category.name}
+            </Badge>
+          )}
+          <Badge variant="outline" className="font-mono text-xs">
+            v{article.current_version}
           </Badge>
-        )}
+        </div>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground line-clamp-2">{article.content}</p>
