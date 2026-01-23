@@ -12,6 +12,8 @@ import {
   BookOpen,
   CalendarDays,
   GraduationCap,
+  Building2,
+  ClipboardList,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,8 +39,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import bayLegalLogo from "@/assets/bay-legal-logo.webp";
 
-import { Building2 } from "lucide-react";
-
 const mainNavItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "My Department", url: "/department", icon: Building2 },
@@ -52,13 +52,19 @@ const mainNavItems = [
   { title: "Training", url: "/training", icon: GraduationCap },
 ];
 
-const adminNavItems = [
-  { title: "Admin Panel", url: "/admin", icon: Shield },
-];
-
 export function AppSidebar() {
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, isAdmin, hasRole, isSuperAdmin, signOut } = useAuth();
   const location = useLocation();
+
+  // Access checks
+  const departmentName = profile?.department?.name?.toLowerCase() || "";
+  const isHRDepartment = departmentName.includes("hr") || departmentName.includes("human resources");
+  const isTrainingDepartment = departmentName.includes("training");
+  const isTrainingManager = hasRole("training_manager");
+  
+  const canSeeHROnboarding = isSuperAdmin() || isHRDepartment;
+  const canSeeTrainingManagement = isSuperAdmin() || isTrainingDepartment || isTrainingManager;
+  const showAdminSection = isAdmin() || canSeeHROnboarding || canSeeTrainingManagement;
 
   const initials = profile
     ? `${profile.first_name[0]}${profile.last_name[0]}`
@@ -102,24 +108,50 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {isAdmin() && (
+        {showAdminSection && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/60">Administration</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminNavItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                {isAdmin() && (
+                  <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      isActive={location.pathname.startsWith(item.url)}
+                      isActive={location.pathname === "/admin"}
                     >
-                      <NavLink to={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                      <NavLink to="/admin">
+                        <Shield className="h-4 w-4" />
+                        <span>Admin Panel</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                )}
+                {canSeeHROnboarding && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === "/hr-onboarding"}
+                    >
+                      <NavLink to="/hr-onboarding">
+                        <ClipboardList className="h-4 w-4" />
+                        <span>HR Onboarding</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {canSeeTrainingManagement && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === "/training-management"}
+                    >
+                      <NavLink to="/training-management">
+                        <GraduationCap className="h-4 w-4" />
+                        <span>Training Mgmt</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

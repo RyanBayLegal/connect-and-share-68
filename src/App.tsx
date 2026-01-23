@@ -20,6 +20,8 @@ import Admin from "./pages/Admin";
 import DepartmentHub from "./pages/DepartmentHub";
 import Training from "./pages/Training";
 import TeamProgress from "./pages/TeamProgress";
+import HROnboarding from "./pages/HROnboarding";
+import TrainingManagement from "./pages/TrainingManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -134,6 +136,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout><TeamProgress /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr-onboarding"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><HROnboarding /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/training-management"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><TrainingManagement /></AppLayout>
                 </ProtectedRoute>
               }
             />
