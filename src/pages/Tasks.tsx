@@ -6,8 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -23,17 +21,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Plus,
-  FolderKanban,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  MoreVertical,
-  Calendar,
-} from "lucide-react";
-import { format } from "date-fns";
+import { Plus, FolderKanban } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+  DragOverEvent,
+} from "@dnd-kit/core";
+import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
+import { KanbanColumn } from "@/components/tasks/KanbanColumn";
+import { TaskCard } from "@/components/tasks/TaskCard";
 import type { Profile, Department } from "@/types/database";
 
 interface Project {
@@ -61,28 +65,17 @@ interface Task {
   assignee?: Profile;
 }
 
-const statusConfig = {
-  todo: { label: "To Do", icon: Clock, color: "bg-slate-500" },
-  in_progress: { label: "In Progress", icon: AlertCircle, color: "bg-blue-500" },
-  review: { label: "In Review", icon: Clock, color: "bg-amber-500" },
-  done: { label: "Done", icon: CheckCircle2, color: "bg-green-500" },
-};
-
-const priorityConfig = {
-  low: { label: "Low", color: "secondary" },
-  medium: { label: "Medium", color: "default" },
-  high: { label: "High", color: "destructive" },
-  urgent: { label: "Urgent", color: "destructive" },
-};
+const statuses: Task["status"][] = ["todo", "in_progress", "review", "done"];
 
 export default function Tasks() {
-  const { profile, isAdmin } = useAuth();
+  const { profile } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   // New project dialog
   const [isProjectOpen, setIsProjectOpen] = useState(false);
@@ -97,6 +90,18 @@ export default function Tasks() {
   const [taskAssignee, setTaskAssignee] = useState("");
   const [taskPriority, setTaskPriority] = useState<Task["priority"]>("medium");
   const [taskDueDate, setTaskDueDate] = useState("");
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     fetchData();
@@ -145,7 +150,7 @@ export default function Tasks() {
     if (!profile) return;
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("projects")
         .insert({
           name: projectName,
@@ -174,6 +179,7 @@ export default function Tasks() {
     if (!profile || !selectedProject) return;
 
     try {
+      const maxPosition = tasks.filter(t => t.status === "todo").length;
       const { error } = await supabase.from("tasks").insert({
         title: taskTitle,
         description: taskDescription || null,
@@ -182,7 +188,7 @@ export default function Tasks() {
         created_by: profile.id,
         priority: taskPriority,
         due_date: taskDueDate || null,
-        position: tasks.length,
+        position: maxPosition,
       });
 
       if (error) throw error;
@@ -202,23 +208,134 @@ export default function Tasks() {
 
   const handleStatusChange = async (taskId: string, newStatus: Task["status"]) => {
     try {
+      // Get max position in new column
+      const tasksInColumn = tasks.filter(t => t.status === newStatus);
+      const newPosition = tasksInColumn.length;
+
       const { error } = await supabase
         .from("tasks")
-        .update({ status: newStatus })
+        .update({ status: newStatus, position: newPosition })
         .eq("id", taskId);
 
       if (error) throw error;
       
       setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+        prev.map((t) => (t.id === taskId ? { ...t, status: newStatus, position: newPosition } : t))
       );
     } catch (error: any) {
       toast.error("Failed to update task");
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const task = tasks.find((t) => t.id === active.id);
+    setActiveTask(task || null);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    const activeTask = tasks.find((t) => t.id === activeId);
+    if (!activeTask) return;
+
+    // Check if dropping on a column
+    if (statuses.includes(overId as Task["status"])) {
+      if (activeTask.status !== overId) {
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === activeId ? { ...t, status: overId as Task["status"] } : t
+          )
+        );
+      }
+      return;
+    }
+
+    // Check if dropping on another task
+    const overTask = tasks.find((t) => t.id === overId);
+    if (overTask && activeTask.status !== overTask.status) {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === activeId ? { ...t, status: overTask.status } : t
+        )
+      );
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTask(null);
+
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    const activeTask = tasks.find((t) => t.id === activeId);
+    if (!activeTask) return;
+
+    let newStatus = activeTask.status;
+    let newTasks = [...tasks];
+
+    // Determine new status
+    if (statuses.includes(overId as Task["status"])) {
+      newStatus = overId as Task["status"];
+    } else {
+      const overTask = tasks.find((t) => t.id === overId);
+      if (overTask) {
+        newStatus = overTask.status;
+      }
+    }
+
+    // Get tasks in the target column
+    const columnTasks = newTasks.filter((t) => t.status === newStatus && t.id !== activeId);
+    
+    // Find index to insert at
+    let insertIndex = columnTasks.length;
+    if (!statuses.includes(overId as Task["status"])) {
+      const overTask = newTasks.find((t) => t.id === overId);
+      if (overTask) {
+        insertIndex = columnTasks.findIndex((t) => t.id === overId);
+        if (insertIndex === -1) insertIndex = columnTasks.length;
+      }
+    }
+
+    // Update positions
+    columnTasks.splice(insertIndex, 0, { ...activeTask, status: newStatus });
+    const updatedColumnTasks = columnTasks.map((t, idx) => ({ ...t, position: idx }));
+
+    // Merge back
+    const otherTasks = newTasks.filter((t) => t.status !== newStatus && t.id !== activeId);
+    newTasks = [...otherTasks, ...updatedColumnTasks];
+
+    setTasks(newTasks);
+
+    // Persist changes
+    try {
+      const updates = updatedColumnTasks.map((t) => ({
+        id: t.id,
+        status: t.status,
+        position: t.position,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from("tasks")
+          .update({ status: update.status, position: update.position })
+          .eq("id", update.id);
+      }
+    } catch (error) {
+      console.error("Error updating positions:", error);
+      fetchTasks(selectedProject!.id);
+    }
+  };
+
   const getTasksByStatus = (status: Task["status"]) =>
-    tasks.filter((t) => t.status === status);
+    tasks.filter((t) => t.status === status).sort((a, b) => a.position - b.position);
 
   if (isLoading) {
     return (
@@ -401,84 +518,34 @@ export default function Tasks() {
             </TabsList>
           </Tabs>
 
-          {/* Kanban Board */}
+          {/* Kanban Board with Drag and Drop */}
           {selectedProject && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {(Object.keys(statusConfig) as Task["status"][]).map((status) => {
-                const config = statusConfig[status];
-                const columnTasks = getTasksByStatus(status);
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {statuses.map((status) => (
+                  <KanbanColumn
+                    key={status}
+                    status={status}
+                    tasks={getTasksByStatus(status)}
+                    onStatusChange={handleStatusChange}
+                  />
+                ))}
+              </div>
 
-                return (
-                  <div key={status} className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${config.color}`} />
-                      <h3 className="font-semibold">{config.label}</h3>
-                      <Badge variant="secondary">{columnTasks.length}</Badge>
-                    </div>
-
-                    <div className="space-y-2 min-h-[200px] p-2 rounded-lg bg-muted/50">
-                      {columnTasks.map((task) => (
-                        <Card key={task.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                          <CardContent className="p-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-medium text-sm">{task.title}</h4>
-                              <Select
-                                value={task.status}
-                                onValueChange={(v) => handleStatusChange(task.id, v as Task["status"])}
-                              >
-                                <SelectTrigger className="h-6 w-6 p-0 border-0">
-                                  <MoreVertical className="h-4 w-4" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {(Object.keys(statusConfig) as Task["status"][]).map((s) => (
-                                    <SelectItem key={s} value={s}>
-                                      {statusConfig[s].label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {task.description && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {task.description}
-                              </p>
-                            )}
-
-                            <div className="flex items-center justify-between mt-3">
-                              <div className="flex items-center gap-2">
-                                <Badge
-                                  variant={priorityConfig[task.priority].color as any}
-                                  className="text-xs"
-                                >
-                                  {priorityConfig[task.priority].label}
-                                </Badge>
-                                {task.due_date && (
-                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    {format(new Date(task.due_date), "MMM d")}
-                                  </span>
-                                )}
-                              </div>
-
-                              {task.assignee && (
-                                <Avatar className="h-6 w-6">
-                                  <AvatarImage src={task.assignee.avatar_url || undefined} />
-                                  <AvatarFallback className="text-xs">
-                                    {task.assignee.first_name[0]}
-                                    {task.assignee.last_name[0]}
-                                  </AvatarFallback>
-                                </Avatar>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+              <DragOverlay>
+                {activeTask ? (
+                  <div className="opacity-80">
+                    <TaskCard task={activeTask} onStatusChange={() => {}} />
                   </div>
-                );
-              })}
-            </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           )}
         </>
       )}
