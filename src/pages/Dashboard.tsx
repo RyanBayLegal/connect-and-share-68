@@ -16,7 +16,6 @@ import {
   ListTodo,
   BookOpen,
   CalendarDays,
-  Settings,
   GraduationCap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -24,6 +23,10 @@ import { formatDistanceToNow } from "date-fns";
 import type { Announcement } from "@/types/database";
 import { PRIORITIES, COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
 import { ManagerProgressWidget } from "@/components/dashboard/ManagerProgressWidget";
+import { ClockifyWidget } from "@/components/dashboard/ClockifyWidget";
+import { ChatGPTWidget } from "@/components/dashboard/ChatGPTWidget";
+import { BirthdaysAnniversariesWidget } from "@/components/dashboard/BirthdaysAnniversariesWidget";
+import { GoogleReviewsWidget } from "@/components/dashboard/GoogleReviewsWidget";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -142,44 +145,69 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Resources Section */}
-      <section className="bg-[hsl(220,50%,12%)] py-12">
-        <div className="container">
-          <h2 className="text-2xl md:text-3xl font-light text-primary text-center mb-2">
-            YOUR RESOURCES
-          </h2>
-          <div className="w-24 h-0.5 bg-primary/30 mx-auto mb-10" />
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-4xl mx-auto">
-            {resourceCards.map((resource, index) => (
-              <Link
-                key={resource.href}
-                to={resource.href}
-                className="group flex flex-col items-center text-center p-6 rounded-xl transition-all duration-300 hover:bg-white/10 hover:-translate-y-2 stagger-item focus-ring"
-                style={{ animationFillMode: 'forwards' }}
-              >
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary/20 flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-primary/40 group-hover:scale-110 group-hover:shadow-[0_0_30px_hsl(210,80%,45%,0.4)]">
-                  <resource.icon className="h-10 w-10 md:h-12 md:w-12 text-primary transition-transform duration-300 group-hover:scale-110" />
+      {/* Birthdays & Anniversaries Widget */}
+      <section className="container pt-8">
+        <BirthdaysAnniversariesWidget />
+      </section>
+
+      {/* Two Column Layout: Clockify + Resources */}
+      <section className="container py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Clockify Widget - Left Column */}
+          <div className="lg:col-span-1">
+            <ClockifyWidget />
+          </div>
+
+          {/* Resources - Right Column */}
+          <div className="lg:col-span-2">
+            <Card className="h-full bg-[hsl(220,50%,12%)]">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl font-light text-primary text-center">
+                  YOUR RESOURCES
+                </CardTitle>
+                <div className="w-24 h-0.5 bg-primary/30 mx-auto" />
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                  {resourceCards.map((resource) => (
+                    <Link
+                      key={resource.href}
+                      to={resource.href}
+                      className="group flex flex-col items-center text-center p-4 rounded-xl transition-all duration-300 hover:bg-white/10 hover:-translate-y-2 focus-ring"
+                    >
+                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/20 flex items-center justify-center mb-3 transition-all duration-300 group-hover:bg-primary/40 group-hover:scale-110 group-hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)]">
+                        <resource.icon className="h-8 w-8 md:h-10 md:w-10 text-primary transition-transform duration-300 group-hover:scale-110" />
+                      </div>
+                      <span className="text-primary font-medium text-xs md:text-sm tracking-wide transition-colors group-hover:text-accent">
+                        {resource.title}
+                      </span>
+                      <span className="text-muted-foreground text-xs mt-1 hidden md:block transition-colors group-hover:text-white/70">
+                        {resource.description}
+                      </span>
+                    </Link>
+                  ))}
                 </div>
-                <span className="text-primary font-medium text-sm md:text-base tracking-wide transition-colors group-hover:text-accent">
-                  {resource.title}
-                </span>
-                <span className="text-muted-foreground text-xs mt-1 hidden md:block transition-colors group-hover:text-white/70">
-                  {resource.description}
-                </span>
-              </Link>
-            ))}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
+      {/* ChatGPT + Google Reviews Row */}
+      <section className="container pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <ChatGPTWidget />
+          <GoogleReviewsWidget />
+        </div>
+      </section>
+
       {/* Manager Progress Widget */}
-      <section className="container py-12 pb-0">
+      <section className="container pb-8">
         <ManagerProgressWidget />
       </section>
 
       {/* Recent Announcements */}
-      <section className="container py-12">
+      <section className="container pb-12">
         <Card className="card-interactive">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -204,11 +232,10 @@ export default function Dashboard() {
               </p>
             ) : (
               <div className="space-y-4">
-                {recentAnnouncements.map((announcement, index) => (
+                {recentAnnouncements.map((announcement) => (
                   <div
                     key={announcement.id}
-                    className="flex items-start gap-4 p-4 rounded-lg border bg-card transition-all duration-300 hover:bg-muted/50 hover:border-primary/30 hover:shadow-md hover:-translate-x-1 cursor-pointer stagger-item"
-                    style={{ animationFillMode: 'forwards' }}
+                    className="flex items-start gap-4 p-4 rounded-lg border bg-card transition-all duration-300 hover:bg-muted/50 hover:border-primary/30 hover:shadow-md hover:-translate-x-1 cursor-pointer"
                   >
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={announcement.author?.avatar_url || undefined} />
