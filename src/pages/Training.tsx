@@ -87,6 +87,23 @@ export default function Training() {
     setIsLoadingMaterials(false);
   };
 
+  const openMaterial = async (material: TrainingMaterial) => {
+    if (material.external_url) {
+      window.open(material.external_url, "_blank");
+      return;
+    }
+
+    if (material.file_path) {
+      const { data } = await supabase.storage
+        .from("training-materials")
+        .createSignedUrl(material.file_path, 3600);
+
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, "_blank");
+      }
+    }
+  };
+
   const openCourseDetail = (enrollment: TrainingEnrollment) => {
     setSelectedEnrollment(enrollment);
     if (enrollment.course_id) {
@@ -366,14 +383,18 @@ export default function Training() {
                         <div className="flex items-center gap-3">
                           <Icon className="h-5 w-5 text-muted-foreground" />
                           <span>{material.title}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {material.type}
+                          </Badge>
                         </div>
-                        {material.external_url && (
-                          <Button variant="ghost" size="sm" asChild>
-                            <a href={material.external_url} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openMaterial(material)}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          {material.file_path ? "Download" : "Open"}
+                        </Button>
                       </div>
                     );
                   })}

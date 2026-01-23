@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import DepartmentHub from "./pages/DepartmentHub";
 import Training from "./pages/Training";
+import TeamProgress from "./pages/TeamProgress";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -125,6 +126,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout><Training /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/team-progress"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><TeamProgress /></AppLayout>
                 </ProtectedRoute>
               }
             />
