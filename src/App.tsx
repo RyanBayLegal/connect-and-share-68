@@ -18,6 +18,7 @@ import Events from "./pages/Events";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import DepartmentHub from "./pages/DepartmentHub";
+import Training from "./pages/Training";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -116,6 +117,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout><DepartmentHub /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/training"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><Training /></AppLayout>
                 </ProtectedRoute>
               }
             />

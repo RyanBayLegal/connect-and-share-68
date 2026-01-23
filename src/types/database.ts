@@ -1,4 +1,4 @@
-export type AppRole = 'super_admin' | 'department_manager' | 'employee' | 'contractor';
+export type AppRole = 'super_admin' | 'department_manager' | 'employee' | 'contractor' | 'training_manager';
 
 export interface Department {
   id: string;
@@ -168,4 +168,107 @@ export interface WikiArticleVersion {
   edited_by: string | null;
   created_at: string;
   editor?: Profile;
+}
+
+// Onboarding Types
+export interface OnboardingTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  department_id: string | null;
+  is_default: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  department?: Department;
+}
+
+export interface OnboardingTemplateItem {
+  id: string;
+  template_id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  position: number;
+  created_at: string;
+}
+
+export interface EmployeeOnboarding {
+  id: string;
+  employee_id: string;
+  template_id: string | null;
+  assigned_by: string | null;
+  start_date: string;
+  target_completion_date: string | null;
+  status: string;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  employee?: Profile;
+  template?: OnboardingTemplate;
+}
+
+export interface OnboardingProgress {
+  id: string;
+  onboarding_id: string;
+  item_id: string;
+  is_completed: boolean;
+  completed_by: string | null;
+  completed_at: string | null;
+  notes: string | null;
+  item?: OnboardingTemplateItem;
+}
+
+// Training Types
+export interface TrainingCourse {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  duration_hours: number | null;
+  is_mandatory: boolean;
+  department_id: string | null;
+  created_by: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  department?: Department;
+}
+
+export interface TrainingMaterial {
+  id: string;
+  course_id: string;
+  title: string;
+  type: string;
+  file_path: string | null;
+  external_url: string | null;
+  position: number;
+  created_at: string;
+}
+
+export interface TrainingEnrollment {
+  id: string;
+  course_id: string;
+  employee_id: string;
+  assigned_by: string | null;
+  due_date: string | null;
+  status: string;
+  progress_percent: number;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  course?: TrainingCourse;
+  employee?: Profile;
+}
+
+// Notification Types
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
 }

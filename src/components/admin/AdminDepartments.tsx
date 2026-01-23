@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Pencil } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { Department, Profile } from "@/types/database";
 import { ManagerSelect } from "@/components/directory/ManagerSelect";
@@ -106,6 +107,10 @@ export function AdminDepartments() {
     return `${manager.first_name} ${manager.last_name}`;
   };
 
+  const getMemberCount = (deptId: string) => {
+    return employees.filter((e) => e.department_id === deptId).length;
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center p-8">
@@ -171,6 +176,7 @@ export function AdminDepartments() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead>Members</TableHead>
               <TableHead>Manager</TableHead>
               <TableHead className="w-20">Actions</TableHead>
             </TableRow>
@@ -180,6 +186,12 @@ export function AdminDepartments() {
               <TableRow key={dept.id}>
                 <TableCell className="font-medium">{dept.name}</TableCell>
                 <TableCell>{dept.description || "-"}</TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="gap-1">
+                    <Users className="h-3 w-3" />
+                    {getMemberCount(dept.id)}
+                  </Badge>
+                </TableCell>
                 <TableCell>
                   {dept.manager ? (
                     <div className="flex items-center gap-2">
