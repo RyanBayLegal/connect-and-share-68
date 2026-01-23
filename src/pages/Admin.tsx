@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Building2 } from "lucide-react";
+import { Users, Building2, Star } from "lucide-react";
 import { AdminUsers } from "@/components/admin/AdminUsers";
 import { AdminDepartments } from "@/components/admin/AdminDepartments";
+import { AdminGoogleReviews } from "@/components/admin/AdminGoogleReviews";
 
 export default function Admin() {
   return (
@@ -23,6 +24,10 @@ export default function Admin() {
             <Building2 className="h-4 w-4" />
             Departments
           </TabsTrigger>
+          <TabsTrigger value="reviews" className="gap-2">
+            <Star className="h-4 w-4" />
+            Reviews
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="mt-6">
@@ -31,6 +36,10 @@ export default function Admin() {
 
         <TabsContent value="departments" className="mt-6">
           <AdminDepartments />
+        </TabsContent>
+
+        <TabsContent value="reviews" className="mt-6">
+          <AdminGoogleReviews />
         </TabsContent>
       </Tabs>
     </div>

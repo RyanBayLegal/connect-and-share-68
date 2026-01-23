@@ -140,7 +140,7 @@ export default function Dashboard() {
       <section className="bg-[hsl(220,60%,15%)] text-white py-4">
         <div className="container text-center">
           <p className="text-sm md:text-base">
-            Welcome to the Bay Legal Knowledge Hub — your go-to place for policies, forms, and helpful resources designed to support you every day.
+            Welcome{profile?.first_name ? `, ${profile.first_name}` : ""} to the Bay Legal Knowledge Hub — your go-to place for policies, forms, and helpful resources designed to support you every day.
           </p>
         </div>
       </section>

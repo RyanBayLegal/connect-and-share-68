@@ -25,6 +25,8 @@ export default function Settings() {
   const [phone, setPhone] = useState(profile?.phone || "");
   const [location, setLocation] = useState(profile?.location || "");
   const [bio, setBio] = useState(profile?.bio || "");
+  const [dateOfBirth, setDateOfBirth] = useState(profile?.date_of_birth || "");
+  const [dateHired, setDateHired] = useState(profile?.date_hired || "");
 
   // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -48,6 +50,8 @@ export default function Settings() {
           phone: phone || null,
           location: location || null,
           bio: bio || null,
+          date_of_birth: dateOfBirth || null,
+          date_hired: dateHired || null,
         })
         .eq("id", profile.id);
 
@@ -238,6 +242,33 @@ export default function Settings() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used for birthday celebrations
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateHired">Date Hired</Label>
+                <Input
+                  id="dateHired"
+                  type="date"
+                  value={dateHired}
+                  onChange={(e) => setDateHired(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used for work anniversary celebrations
+                </p>
               </div>
             </div>
 
