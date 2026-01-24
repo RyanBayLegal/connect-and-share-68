@@ -22,11 +22,11 @@ export function TrainingQuickActionsWidget() {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Access check
+  // Access check - training department or training_manager only (not super_admin)
   const departmentName = profile?.department?.name?.toLowerCase() || "";
   const isTrainingDepartment = departmentName.includes("training");
   const isTrainingManager = hasRole("training_manager");
-  const canAccess = isSuperAdmin() || isTrainingDepartment || isTrainingManager;
+  const canAccess = isTrainingDepartment || isTrainingManager;
 
   useEffect(() => {
     if (!canAccess) {

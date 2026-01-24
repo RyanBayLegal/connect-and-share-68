@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Play, Square, Coffee, Calendar, Plus, Edit2 } from "lucide-react";
+import { Clock, Play, Square, Coffee, Calendar, Plus, Edit2, Send, Loader2 } from "lucide-react";
 import { format, differenceInMinutes, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
 import type { TimeEntry, TimeTrackingStatus, Timesheet } from "@/types/database";
 
@@ -31,6 +31,7 @@ export default function TimeTracking() {
   const [manualClockOut, setManualClockOut] = useState("17:00");
   const [manualNote, setManualNote] = useState("");
   const [manualStatus, setManualStatus] = useState("");
+  const [isSubmittingTimesheet, setIsSubmittingTimesheet] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -203,6 +204,48 @@ export default function TimeTracking() {
   };
 
   const getStatusById = (id: string | null) => statuses.find((s) => s.id === id);
+
+  const handleSubmitTimesheet = async (timesheet: Timesheet) => {
+    if (!profile) return;
+    
+    setIsSubmittingTimesheet(timesheet.id);
+    try {
+      // Update timesheet status to submitted
+      const { error } = await supabase
+        .from("timesheets")
+        .update({ 
+          status: "submitted", 
+          submitted_at: new Date().toISOString() 
+        })
+        .eq("id", timesheet.id);
+
+      if (error) throw error;
+
+      // Send notification to managers
+      const totalHours = 
+        (timesheet.total_regular_hours || 0) + 
+        (timesheet.total_overtime_hours || 0) + 
+        (timesheet.total_pto_hours || 0);
+
+      await supabase.functions.invoke("send-timesheet-notification", {
+        body: {
+          timesheetId: timesheet.id,
+          employeeId: profile.id,
+          periodStart: format(new Date(timesheet.period_start), "MMM d"),
+          periodEnd: format(new Date(timesheet.period_end), "MMM d, yyyy"),
+          totalHours,
+        },
+      });
+
+      toast({ title: "Timesheet submitted for approval!" });
+      fetchData();
+    } catch (error) {
+      console.error("Error submitting timesheet:", error);
+      toast({ title: "Error submitting timesheet", variant: "destructive" });
+    } finally {
+      setIsSubmittingTimesheet(null);
+    }
+  };
 
   const calculateDuration = (clockIn: string, clockOut: string | null) => {
     const start = new Date(clockIn);
@@ -495,17 +538,33 @@ export default function TimeTracking() {
                       {timesheet.total_overtime_hours}h | PTO: {timesheet.total_pto_hours}h
                     </p>
                   </div>
-                  <Badge
-                    variant={
-                      timesheet.status === "approved"
-                        ? "default"
-                        : timesheet.status === "submitted"
-                        ? "secondary"
-                        : "outline"
-                    }
-                  >
-                    {timesheet.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {timesheet.status === "draft" && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleSubmitTimesheet(timesheet)}
+                        disabled={isSubmittingTimesheet === timesheet.id}
+                      >
+                        {isSubmittingTimesheet === timesheet.id ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-1" />
+                        )}
+                        Submit
+                      </Button>
+                    )}
+                    <Badge
+                      variant={
+                        timesheet.status === "approved"
+                          ? "default"
+                          : timesheet.status === "submitted"
+                          ? "secondary"
+                          : "outline"
+                      }
+                    >
+                      {timesheet.status}
+                    </Badge>
+                  </div>
                 </div>
               ))}
             </div>

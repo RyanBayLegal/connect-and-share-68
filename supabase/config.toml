@@ -1,1 +1,7 @@
 project_id = "lweussacuzncvbjlsnfq"
+
+[functions.create-admin-user]
+verify_jwt = false
+
+[functions.send-timesheet-notification]
+verify_jwt = false

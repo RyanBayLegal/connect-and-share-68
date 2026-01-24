@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Users, Calendar, FileText, Plus, Edit2, Download, Play, CheckCircle } from "lucide-react";
+import { DollarSign, Users, Calendar, FileText, Plus, Edit2, Download, Play, CheckCircle, Loader2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import html2pdf from "html2pdf.js";
 import type { Profile, PayrollSettings, PayrollRun, PayStub, PayrollDeductionType, EmployeeDeduction } from "@/types/database";
 
 export default function Payroll() {
@@ -41,8 +42,10 @@ export default function Payroll() {
   const [runPeriodEnd, setRunPeriodEnd] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
   const [runPayDate, setRunPayDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  // Pay stub viewer
+  // Pay stub viewer and PDF
   const [viewingPayStub, setViewingPayStub] = useState<(PayStub & { employee?: Profile }) | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const payStubRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isHRManager()) {
@@ -256,6 +259,115 @@ export default function Payroll() {
         return "secondary";
       default:
         return "outline";
+    }
+  };
+
+  const generatePayStubPDF = async (payStub: PayStub & { employee?: Profile }) => {
+    setIsGeneratingPdf(true);
+    try {
+      const totalDeductions = Object.values(payStub.deductions || {}).reduce(
+        (a, b) => a + (b as number),
+        0
+      );
+
+      const element = document.createElement("div");
+      element.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto;">
+          <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 20px;">
+            <h1 style="margin: 0; color: #1e40af; font-size: 24px;">PAY STUB</h1>
+            <p style="margin: 5px 0 0; color: #6b7280;">Bay Legal</p>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+            <div>
+              <h3 style="margin: 0 0 5px; font-size: 14px; color: #6b7280;">EMPLOYEE</h3>
+              <p style="margin: 0; font-weight: bold; font-size: 16px;">${payStub.employee?.first_name} ${payStub.employee?.last_name}</p>
+              <p style="margin: 5px 0 0; color: #6b7280; font-size: 14px;">${payStub.employee?.job_title || "Employee"}</p>
+            </div>
+            <div style="text-align: right;">
+              <h3 style="margin: 0 0 5px; font-size: 14px; color: #6b7280;">PAY DATE</h3>
+              <p style="margin: 0; font-weight: bold; font-size: 16px;">${format(new Date(payStub.created_at), "MMMM d, yyyy")}</p>
+            </div>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <thead>
+              <tr style="background-color: #f3f4f6;">
+                <th style="text-align: left; padding: 12px; border: 1px solid #e5e7eb;">Description</th>
+                <th style="text-align: right; padding: 12px; border: 1px solid #e5e7eb;">Hours</th>
+                <th style="text-align: right; padding: 12px; border: 1px solid #e5e7eb;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 12px; border: 1px solid #e5e7eb;">Regular Hours</td>
+                <td style="text-align: right; padding: 12px; border: 1px solid #e5e7eb;">${payStub.regular_hours}</td>
+                <td style="text-align: right; padding: 12px; border: 1px solid #e5e7eb;">-</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; border: 1px solid #e5e7eb;">Overtime Hours</td>
+                <td style="text-align: right; padding: 12px; border: 1px solid #e5e7eb;">${payStub.overtime_hours}</td>
+                <td style="text-align: right; padding: 12px; border: 1px solid #e5e7eb;">-</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; border: 1px solid #e5e7eb;">PTO Hours</td>
+                <td style="text-align: right; padding: 12px; border: 1px solid #e5e7eb;">${payStub.pto_hours}</td>
+                <td style="text-align: right; padding: 12px; border: 1px solid #e5e7eb;">-</td>
+              </tr>
+              <tr style="background-color: #f3f4f6; font-weight: bold;">
+                <td style="padding: 12px; border: 1px solid #e5e7eb;" colspan="2">Gross Pay</td>
+                <td style="text-align: right; padding: 12px; border: 1px solid #e5e7eb;">$${payStub.gross_pay.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 style="margin: 0 0 10px; font-size: 14px; color: #6b7280;">DEDUCTIONS</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <tbody>
+              ${Object.entries(payStub.deductions || {})
+                .map(
+                  ([key, value]) => `
+                <tr>
+                  <td style="padding: 10px; border: 1px solid #e5e7eb; text-transform: capitalize;">${key}</td>
+                  <td style="text-align: right; padding: 10px; border: 1px solid #e5e7eb; color: #dc2626;">-$${(value as number).toFixed(2)}</td>
+                </tr>
+              `
+                )
+                .join("")}
+              <tr style="background-color: #fef2f2; font-weight: bold;">
+                <td style="padding: 10px; border: 1px solid #e5e7eb;">Total Deductions</td>
+                <td style="text-align: right; padding: 10px; border: 1px solid #e5e7eb; color: #dc2626;">-$${totalDeductions.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="background-color: #ecfdf5; padding: 20px; border-radius: 8px; text-align: center;">
+            <h3 style="margin: 0 0 5px; font-size: 14px; color: #6b7280;">NET PAY</h3>
+            <p style="margin: 0; font-size: 32px; font-weight: bold; color: #059669;">$${payStub.net_pay.toFixed(2)}</p>
+          </div>
+
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 12px;">
+            <p>This is an official pay stub from Bay Legal. Please retain for your records.</p>
+            <p>Generated on ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</p>
+          </div>
+        </div>
+      `;
+
+      const opt = {
+        margin: 10,
+        filename: `paystub-${payStub.employee?.first_name}-${payStub.employee?.last_name}-${format(new Date(payStub.created_at), "yyyy-MM-dd")}.pdf`,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm" as const, format: "a4" as const, orientation: "portrait" as const },
+      };
+
+      await html2pdf().from(element).set(opt).save();
+      toast({ title: "PDF downloaded successfully!" });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({ title: "Error generating PDF", variant: "destructive" });
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -656,13 +768,25 @@ export default function Payroll() {
                             ${stub.net_pay.toFixed(2)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setViewingPayStub(stub)}
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => generatePayStubPDF(stub)}
+                                disabled={isGeneratingPdf}
+                                title="Download PDF"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setViewingPayStub(stub)}
+                                title="View Details"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -738,9 +862,18 @@ export default function Payroll() {
                     </div>
                   </div>
 
-                  <Button variant="outline" className="w-full">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => generatePayStubPDF(viewingPayStub)}
+                    disabled={isGeneratingPdf}
+                  >
+                    {isGeneratingPdf ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    {isGeneratingPdf ? "Generating..." : "Download PDF"}
                   </Button>
                 </div>
               )}

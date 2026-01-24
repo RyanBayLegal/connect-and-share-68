@@ -8,11 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function TrainingManagement() {
   const { profile, hasRole, isSuperAdmin } = useAuth();
   
-  // Access check: super_admin, training department, or training_manager role
+  // Access check: training department or training_manager role only (not super_admin)
   const departmentName = profile?.department?.name?.toLowerCase() || "";
   const isTrainingDepartment = departmentName.includes("training");
   const isTrainingManager = hasRole("training_manager");
-  const canAccess = isSuperAdmin() || isTrainingDepartment || isTrainingManager;
+  const canAccess = isTrainingDepartment || isTrainingManager;
   
   if (!canAccess) {
     return <Navigate to="/" replace />;

@@ -66,7 +66,7 @@ export function AppSidebar() {
   const isTrainingManager = hasRole("training_manager");
   
   const canSeeHROnboarding = isSuperAdmin() || isHRDepartment || isHRManager();
-  const canSeeTrainingManagement = isSuperAdmin() || isTrainingDepartment || isTrainingManager;
+  const canSeeTrainingManagement = isTrainingDepartment || isTrainingManager; // Removed super_admin
   const canSeeHRAdmin = isSuperAdmin() || isHRManager();
   
   // Only show admin section once roles are fully loaded
@@ -128,6 +128,19 @@ export function AppSidebar() {
                       <NavLink to="/admin">
                         <Shield className="h-4 w-4" />
                         <span>Admin Panel</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {canSeeHRAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === "/hr-dashboard"}
+                    >
+                      <NavLink to="/hr-dashboard">
+                        <Users className="h-4 w-4" />
+                        <span>HR Dashboard</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
