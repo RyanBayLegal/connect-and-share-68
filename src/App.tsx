@@ -22,6 +22,10 @@ import Training from "./pages/Training";
 import TeamProgress from "./pages/TeamProgress";
 import HROnboarding from "./pages/HROnboarding";
 import TrainingManagement from "./pages/TrainingManagement";
+import TimeTracking from "./pages/TimeTracking";
+import TimeManagement from "./pages/TimeManagement";
+import HRSettings from "./pages/HRSettings";
+import Payroll from "./pages/Payroll";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -152,6 +156,38 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout><TrainingManagement /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/time-tracking"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><TimeTracking /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/time-management"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><TimeManagement /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr-settings"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><HRSettings /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payroll"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><Payroll /></AppLayout>
                 </ProtectedRoute>
               }
             />
