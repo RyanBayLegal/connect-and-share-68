@@ -27,6 +27,7 @@ import TimeManagement from "./pages/TimeManagement";
 import HRSettings from "./pages/HRSettings";
 import Payroll from "./pages/Payroll";
 import HRDashboard from "./pages/HRDashboard";
+import MyHR from "./pages/MyHR";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -197,6 +198,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AppLayout><HRDashboard /></AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-hr"
+              element={
+                <ProtectedRoute>
+                  <AppLayout><MyHR /></AppLayout>
                 </ProtectedRoute>
               }
             />

@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Clock, Users, CheckCircle, XCircle, Search, Download, Calendar } from "lucide-react";
 import { format, differenceInMinutes, startOfWeek, endOfWeek } from "date-fns";
-import type { TimeEntry, TimeTrackingStatus, Timesheet, Profile } from "@/types/database";
+import type { TimeEntry, TimeTrackingStatus, Timesheet, Profile, TimeOffRequest } from "@/types/database";
 
 interface EmployeeStatus {
   employee: Profile;
@@ -26,10 +26,12 @@ export default function TimeManagement() {
   const [employeeStatuses, setEmployeeStatuses] = useState<EmployeeStatus[]>([]);
   const [pendingTimesheets, setPendingTimesheets] = useState<(Timesheet & { employee?: Profile })[]>([]);
   const [allTimesheets, setAllTimesheets] = useState<(Timesheet & { employee?: Profile })[]>([]);
+  const [timeOffRequests, setTimeOffRequests] = useState<(TimeOffRequest & { employee?: Profile })[]>([]);
   const [statuses, setStatuses] = useState<TimeTrackingStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [timeOffFilter, setTimeOffFilter] = useState<string>("pending");
 
   useEffect(() => {
     if (isHRManager()) {
@@ -140,6 +142,27 @@ export default function TimeManagement() {
 
         setAllTimesheets(allWithEmployees);
       }
+
+      // Fetch time-off requests
+      const { data: timeOffData } = await supabase
+        .from("time_off_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (timeOffData) {
+        const employeeIds = [...new Set(timeOffData.map((r) => r.employee_id))];
+        const { data: employeeData } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("id", employeeIds);
+
+        const requestsWithEmployees = timeOffData.map((r) => ({
+          ...r,
+          employee: employeeData?.find((e) => e.id === r.employee_id) as unknown as Profile,
+        }));
+
+        setTimeOffRequests(requestsWithEmployees as (TimeOffRequest & { employee?: Profile })[]);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -182,6 +205,57 @@ export default function TimeManagement() {
       console.error("Error rejecting timesheet:", error);
       toast({ title: "Error rejecting timesheet", variant: "destructive" });
     }
+  };
+
+  const handleApproveTimeOff = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from("time_off_requests")
+        .update({
+          status: "approved",
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", requestId);
+
+      if (error) throw error;
+
+      toast({ title: "Time-off request approved!" });
+      fetchData();
+    } catch (error) {
+      console.error("Error approving time-off:", error);
+      toast({ title: "Error approving request", variant: "destructive" });
+    }
+  };
+
+  const handleDenyTimeOff = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from("time_off_requests")
+        .update({
+          status: "denied",
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", requestId);
+
+      if (error) throw error;
+
+      toast({ title: "Time-off request denied" });
+      fetchData();
+    } catch (error) {
+      console.error("Error denying time-off:", error);
+      toast({ title: "Error denying request", variant: "destructive" });
+    }
+  };
+
+  const getRequestTypeName = (type: string) => {
+    const types: Record<string, string> = {
+      pto: "PTO",
+      sick: "Sick Leave",
+      personal: "Personal Day",
+      bereavement: "Bereavement",
+      unpaid: "Unpaid Leave",
+    };
+    return types[type] || type;
   };
 
   const getStatusById = (id: string | null) => statuses.find((s) => s.id === id);
@@ -266,6 +340,18 @@ export default function TimeManagement() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
+              Time-Off Requests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {timeOffRequests.filter((r) => r.status === "pending").length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Employees
             </CardTitle>
           </CardHeader>
@@ -283,6 +369,14 @@ export default function TimeManagement() {
             {pendingTimesheets.length > 0 && (
               <Badge variant="destructive" className="ml-2">
                 {pendingTimesheets.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="time-off">
+            Time-Off Requests
+            {timeOffRequests.filter((r) => r.status === "pending").length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {timeOffRequests.filter((r) => r.status === "pending").length}
               </Badge>
             )}
           </TabsTrigger>
@@ -411,6 +505,105 @@ export default function TimeManagement() {
                 <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-4" />
                 <p className="text-lg font-medium">All caught up!</p>
                 <p className="text-muted-foreground">No pending timesheet approvals</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="time-off" className="space-y-4">
+          <div className="flex gap-4 items-center">
+            <Select value={timeOffFilter} onValueChange={setTimeOffFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="denied">Denied</SelectItem>
+                <SelectItem value="all">All Requests</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {timeOffRequests.filter((r) => timeOffFilter === "all" || r.status === timeOffFilter).length > 0 ? (
+            <div className="space-y-4">
+              {timeOffRequests
+                .filter((r) => timeOffFilter === "all" || r.status === timeOffFilter)
+                .map((request) => (
+                  <Card key={request.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={request.employee?.avatar_url || undefined} />
+                            <AvatarFallback>
+                              {request.employee?.first_name?.[0]}
+                              {request.employee?.last_name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">
+                              {request.employee?.first_name} {request.employee?.last_name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {getRequestTypeName(request.request_type)} •{" "}
+                              {format(new Date(request.start_date), "MMM d")}
+                              {request.start_date !== request.end_date &&
+                                ` - ${format(new Date(request.end_date), "MMM d, yyyy")}`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right mr-4">
+                          <p className="font-medium">{request.hours_requested} hours</p>
+                          <p className="text-sm text-muted-foreground">
+                            {request.reason || "No reason provided"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {request.status === "pending" ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDenyTimeOff(request.id)}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Deny
+                              </Button>
+                              <Button size="sm" onClick={() => handleApproveTimeOff(request.id)}>
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge
+                              variant={
+                                request.status === "approved"
+                                  ? "default"
+                                  : request.status === "denied"
+                                  ? "destructive"
+                                  : "secondary"
+                              }
+                            >
+                              {request.status}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-lg font-medium">No time-off requests</p>
+                <p className="text-muted-foreground">
+                  {timeOffFilter === "pending"
+                    ? "No pending requests to review"
+                    : `No ${timeOffFilter} requests found`}
+                </p>
               </CardContent>
             </Card>
           )}
