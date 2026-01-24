@@ -81,7 +81,7 @@ export function AddMemberDialog({
       const fetchEmployees = async () => {
         const { data } = await supabase
           .from("profiles")
-          .select("*, department:departments(*)")
+          .select("*, department:departments!profiles_department_id_fkey(*)")
           .eq("is_active", true)
           .order("first_name");
         

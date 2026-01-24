@@ -63,7 +63,7 @@ export default function Directory() {
       const [{ data: employeesData }, { data: departmentsData }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("*, department:departments(*)")
+          .select("*, department:departments!profiles_department_id_fkey(*)")
           .eq("is_active", true)
           .order("first_name"),
         supabase.from("departments").select("*").order("name"),

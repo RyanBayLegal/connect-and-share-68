@@ -52,9 +52,9 @@ export function TrainingAnalytics() {
         { data: profiles },
         { data: departments },
       ] = await Promise.all([
-        supabase.from("training_enrollments").select("*, employee:profiles(*, department:departments(*))"),
+        supabase.from("training_enrollments").select("*, employee:profiles(*, department:departments!profiles_department_id_fkey(*))"),
         supabase.from("training_courses").select("*").eq("is_active", true),
-        supabase.from("profiles").select("*, department:departments(*)"),
+        supabase.from("profiles").select("*, department:departments!profiles_department_id_fkey(*)"),
         supabase.from("departments").select("*"),
       ]);
 

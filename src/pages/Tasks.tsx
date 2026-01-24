@@ -117,7 +117,7 @@ export default function Tasks() {
     try {
       const [{ data: projectsData }, { data: employeesData }, { data: deptsData }] =
         await Promise.all([
-          supabase.from("projects").select("*, department:departments(*)").eq("is_archived", false).order("name"),
+          supabase.from("projects").select("*, department:departments!projects_department_id_fkey(*)").eq("is_archived", false).order("name"),
           supabase.from("profiles").select("*").eq("is_active", true).order("first_name"),
           supabase.from("departments").select("*").order("name"),
         ]);

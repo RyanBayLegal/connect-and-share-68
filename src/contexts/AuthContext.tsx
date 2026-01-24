@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("*, department:departments(*)")
+        .select("*, department:departments!profiles_department_id_fkey(*)")
         .eq("user_id", userId)
         .single();
 

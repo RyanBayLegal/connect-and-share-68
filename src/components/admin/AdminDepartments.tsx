@@ -37,7 +37,7 @@ export function AdminDepartments() {
       supabase.from("departments").select("*").order("name"),
       supabase
         .from("profiles")
-        .select("*, department:departments(*)")
+        .select("*, department:departments!profiles_department_id_fkey(*)")
         .eq("is_active", true)
         .order("first_name"),
     ]);
