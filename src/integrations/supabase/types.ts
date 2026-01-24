@@ -846,6 +846,9 @@ export type Database = {
           date_of_birth: string | null
           department_id: string | null
           email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
           first_name: string
           id: string
           is_active: boolean
@@ -867,6 +870,9 @@ export type Database = {
           date_of_birth?: string | null
           department_id?: string | null
           email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           first_name: string
           id?: string
           is_active?: boolean
@@ -888,6 +894,9 @@ export type Database = {
           date_of_birth?: string | null
           department_id?: string | null
           email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           first_name?: string
           id?: string
           is_active?: boolean
@@ -1557,6 +1566,7 @@ export type Database = {
         | "employee"
         | "contractor"
         | "training_manager"
+        | "hr_manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1690,6 +1700,7 @@ export const Constants = {
         "employee",
         "contractor",
         "training_manager",
+        "hr_manager",
       ],
     },
   },
