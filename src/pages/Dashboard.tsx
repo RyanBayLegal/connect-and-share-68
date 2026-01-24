@@ -28,6 +28,7 @@ import { ChatGPTWidget } from "@/components/dashboard/ChatGPTWidget";
 import { BirthdaysAnniversariesWidget } from "@/components/dashboard/BirthdaysAnniversariesWidget";
 import { GoogleReviewsWidget } from "@/components/dashboard/GoogleReviewsWidget";
 import { TrainingQuickActionsWidget } from "@/components/dashboard/TrainingQuickActionsWidget";
+import { TimeTrackingWidget } from "@/components/dashboard/TimeTrackingWidget";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -154,6 +155,13 @@ export default function Dashboard() {
       {/* Training Quick Actions - only visible to training managers */}
       <section className="container pt-4">
         <TrainingQuickActionsWidget />
+      </section>
+
+      {/* Time Tracking Widget */}
+      <section className="container pt-4">
+        <div className="max-w-md">
+          <TimeTrackingWidget />
+        </div>
       </section>
 
       {/* Resources - Full Width */}

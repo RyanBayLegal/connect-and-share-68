@@ -64,6 +64,11 @@ export default function Directory() {
   const [editDateOfBirth, setEditDateOfBirth] = useState("");
   const [editPersonalEmail, setEditPersonalEmail] = useState("");
   const [editPersonalPhone, setEditPersonalPhone] = useState("");
+  
+  // Emergency contact fields
+  const [editEmergencyContactName, setEditEmergencyContactName] = useState("");
+  const [editEmergencyContactPhone, setEditEmergencyContactPhone] = useState("");
+  const [editEmergencyContactRelationship, setEditEmergencyContactRelationship] = useState("");
 
   const fetchData = async () => {
     try {
@@ -117,6 +122,9 @@ export default function Directory() {
       setEditDateOfBirth(selectedEmployee.date_of_birth || "");
       setEditPersonalEmail(selectedEmployee.personal_email || "");
       setEditPersonalPhone(selectedEmployee.personal_phone || "");
+      setEditEmergencyContactName(selectedEmployee.emergency_contact_name || "");
+      setEditEmergencyContactPhone(selectedEmployee.emergency_contact_phone || "");
+      setEditEmergencyContactRelationship(selectedEmployee.emergency_contact_relationship || "");
     }
     setIsEditMode(true);
   };
@@ -133,6 +141,9 @@ export default function Directory() {
     setEditDateOfBirth("");
     setEditPersonalEmail("");
     setEditPersonalPhone("");
+    setEditEmergencyContactName("");
+    setEditEmergencyContactPhone("");
+    setEditEmergencyContactRelationship("");
   };
 
   // Save profile changes
@@ -159,6 +170,9 @@ export default function Directory() {
         updateData.date_of_birth = editDateOfBirth || null;
         updateData.personal_email = editPersonalEmail || null;
         updateData.personal_phone = editPersonalPhone || null;
+        updateData.emergency_contact_name = editEmergencyContactName || null;
+        updateData.emergency_contact_phone = editEmergencyContactPhone || null;
+        updateData.emergency_contact_relationship = editEmergencyContactRelationship || null;
       }
 
       const { error } = await supabase
@@ -185,6 +199,9 @@ export default function Directory() {
             date_of_birth: editDateOfBirth || null,
             personal_email: editPersonalEmail || null,
             personal_phone: editPersonalPhone || null,
+            emergency_contact_name: editEmergencyContactName || null,
+            emergency_contact_phone: editEmergencyContactPhone || null,
+            emergency_contact_relationship: editEmergencyContactRelationship || null,
           }),
         } : null
       );
@@ -817,6 +834,40 @@ export default function Directory() {
                             placeholder="+1 (555) 123-4567"
                           />
                         </div>
+
+                        {/* Emergency Contact */}
+                        <div className="border-t pt-4 mt-4">
+                          <span className="text-sm font-medium text-muted-foreground">Emergency Contact</span>
+                          <div className="grid grid-cols-2 gap-4 mt-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-emergency-name">Contact Name</Label>
+                              <Input
+                                id="edit-emergency-name"
+                                value={editEmergencyContactName}
+                                onChange={(e) => setEditEmergencyContactName(e.target.value)}
+                                placeholder="Jane Doe"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-emergency-relationship">Relationship</Label>
+                              <Input
+                                id="edit-emergency-relationship"
+                                value={editEmergencyContactRelationship}
+                                onChange={(e) => setEditEmergencyContactRelationship(e.target.value)}
+                                placeholder="Spouse, Parent, etc."
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2 mt-4">
+                            <Label htmlFor="edit-emergency-phone">Contact Phone</Label>
+                            <Input
+                              id="edit-emergency-phone"
+                              value={editEmergencyContactPhone}
+                              onChange={(e) => setEditEmergencyContactPhone(e.target.value)}
+                              placeholder="+1 (555) 123-4567"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </>
                   )}
@@ -922,8 +973,37 @@ export default function Directory() {
                           <span className="text-sm">Personal: {selectedEmployee.personal_phone}</span>
                         </div>
                       )}
+                      
+                      {/* Emergency Contact */}
+                      {(selectedEmployee.emergency_contact_name || selectedEmployee.emergency_contact_phone) && (
+                        <div className="border-t pt-3 mt-3">
+                          <span className="text-xs font-medium text-muted-foreground">Emergency Contact</span>
+                          {selectedEmployee.emergency_contact_name && (
+                            <div className="flex items-center gap-3 mt-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">
+                                {selectedEmployee.emergency_contact_name}
+                                {selectedEmployee.emergency_contact_relationship && ` (${selectedEmployee.emergency_contact_relationship})`}
+                              </span>
+                            </div>
+                          )}
+                          {selectedEmployee.emergency_contact_phone && (
+                            <div className="flex items-center gap-3 mt-1">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <a
+                                href={`tel:${selectedEmployee.emergency_contact_phone}`}
+                                className="text-sm text-primary hover:underline"
+                              >
+                                {selectedEmployee.emergency_contact_phone}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       {!selectedEmployee.date_hired && !selectedEmployee.date_of_birth && 
-                       !selectedEmployee.personal_email && !selectedEmployee.personal_phone && (
+                       !selectedEmployee.personal_email && !selectedEmployee.personal_phone &&
+                       !selectedEmployee.emergency_contact_name && (
                         <p className="text-sm text-muted-foreground italic">No HR information on file</p>
                       )}
                     </div>

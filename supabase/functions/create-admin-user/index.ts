@@ -53,7 +53,8 @@ serve(async (req) => {
     const { 
       email, password, firstName, lastName, role, departmentId, 
       jobTitle, phone, location, managerId,
-      dateHired, dateOfBirth, personalEmail, personalPhone 
+      dateHired, dateOfBirth, personalEmail, personalPhone,
+      emergencyContactName, emergencyContactPhone, emergencyContactRelationship
     } = await req.json();
 
     if (!email || !password || !firstName || !lastName) {
@@ -98,6 +99,11 @@ serve(async (req) => {
     if (dateOfBirth) profileData.date_of_birth = dateOfBirth;
     if (personalEmail) profileData.personal_email = personalEmail;
     if (personalPhone) profileData.personal_phone = personalPhone;
+    
+    // Emergency contact fields
+    if (emergencyContactName) profileData.emergency_contact_name = emergencyContactName;
+    if (emergencyContactPhone) profileData.emergency_contact_phone = emergencyContactPhone;
+    if (emergencyContactRelationship) profileData.emergency_contact_relationship = emergencyContactRelationship;
 
     const { error: profileError } = await supabaseAdmin.from("profiles").insert(profileData);
 
