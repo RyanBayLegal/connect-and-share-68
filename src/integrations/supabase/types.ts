@@ -198,6 +198,42 @@ export type Database = {
           },
         ]
       }
+      clockify_connections: {
+        Row: {
+          access_token: string
+          clockify_user_id: string | null
+          clockify_workspace_id: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          refresh_token: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          clockify_user_id?: string | null
+          clockify_workspace_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          clockify_user_id?: string | null
+          clockify_workspace_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           announcement_id: string | null
