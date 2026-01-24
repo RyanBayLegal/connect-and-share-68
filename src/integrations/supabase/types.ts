@@ -436,6 +436,48 @@ export type Database = {
           },
         ]
       }
+      employee_deductions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          deduction_type_id: string
+          employee_id: string
+          id: string
+          is_active: boolean | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          deduction_type_id: string
+          employee_id: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          deduction_type_id?: string
+          employee_id?: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_deductions_deduction_type_id_fkey"
+            columns: ["deduction_type_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_deduction_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_deductions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_onboarding: {
         Row: {
           assigned_by: string | null
@@ -837,6 +879,181 @@ export type Database = {
           },
         ]
       }
+      pay_stubs: {
+        Row: {
+          created_at: string | null
+          deductions: Json | null
+          employee_id: string
+          gross_pay: number | null
+          id: string
+          net_pay: number | null
+          overtime_hours: number | null
+          payroll_run_id: string
+          pto_hours: number | null
+          regular_hours: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          deductions?: Json | null
+          employee_id: string
+          gross_pay?: number | null
+          id?: string
+          net_pay?: number | null
+          overtime_hours?: number | null
+          payroll_run_id: string
+          pto_hours?: number | null
+          regular_hours?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          deductions?: Json | null
+          employee_id?: string
+          gross_pay?: number | null
+          id?: string
+          net_pay?: number | null
+          overtime_hours?: number | null
+          payroll_run_id?: string
+          pto_hours?: number | null
+          regular_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pay_stubs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_stubs_payroll_run_id_fkey"
+            columns: ["payroll_run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_deduction_types: {
+        Row: {
+          created_at: string | null
+          default_amount: number | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_percentage: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          default_amount?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_percentage?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          default_amount?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_percentage?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      payroll_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          pay_date: string
+          period_end: string
+          period_start: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          pay_date: string
+          period_end: string
+          period_start: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          pay_date?: string
+          period_end?: string
+          period_start?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_settings: {
+        Row: {
+          annual_salary: number | null
+          created_at: string | null
+          employee_id: string
+          hourly_rate: number | null
+          id: string
+          overtime_multiplier: number | null
+          pay_type: string | null
+          standard_hours_per_week: number | null
+          tax_withholding_percent: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          annual_salary?: number | null
+          created_at?: string | null
+          employee_id: string
+          hourly_rate?: number | null
+          id?: string
+          overtime_multiplier?: number | null
+          pay_type?: string | null
+          standard_hours_per_week?: number | null
+          tax_withholding_percent?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          annual_salary?: number | null
+          created_at?: string | null
+          employee_id?: string
+          hourly_rate?: number | null
+          id?: string
+          overtime_multiplier?: number | null
+          pay_type?: string | null
+          standard_hours_per_week?: number | null
+          tax_withholding_percent?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_settings_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1154,6 +1371,180 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_entries: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          clock_in: string
+          clock_out: string | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          is_manual_entry: boolean | null
+          notes: string | null
+          status_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clock_in: string
+          clock_out?: string | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          is_manual_entry?: boolean | null
+          notes?: string | null
+          status_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clock_in?: string
+          clock_out?: string | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          is_manual_entry?: boolean | null
+          notes?: string | null
+          status_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "time_tracking_statuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_tracking_statuses: {
+        Row: {
+          color: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          is_paid: boolean | null
+          name: string
+          position: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_paid?: boolean | null
+          name: string
+          position?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_paid?: boolean | null
+          name?: string
+          position?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_tracking_statuses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timesheets: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          status: string | null
+          submitted_at: string | null
+          total_overtime_hours: number | null
+          total_pto_hours: number | null
+          total_regular_hours: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          status?: string | null
+          submitted_at?: string | null
+          total_overtime_hours?: number | null
+          total_pto_hours?: number | null
+          total_regular_hours?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string | null
+          submitted_at?: string | null
+          total_overtime_hours?: number | null
+          total_pto_hours?: number | null
+          total_regular_hours?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheets_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheets_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1558,6 +1949,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_hr_or_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:
