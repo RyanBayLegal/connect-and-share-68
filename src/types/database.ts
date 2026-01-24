@@ -25,6 +25,8 @@ export interface Profile {
   is_active: boolean;
   date_of_birth: string | null;
   date_hired: string | null;
+  personal_email: string | null;
+  personal_phone: string | null;
   created_at: string;
   updated_at: string;
   department?: Department;

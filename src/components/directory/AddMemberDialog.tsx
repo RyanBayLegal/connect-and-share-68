@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Camera, Loader2, Plus } from "lucide-react";
+import { Camera, Loader2, Plus, Lock } from "lucide-react";
 import type { Department, AppRole, Profile } from "@/types/database";
 import { ManagerSelect } from "@/components/directory/ManagerSelect";
 
@@ -43,6 +44,7 @@ export function AddMemberDialog({
   departments,
   onMemberAdded,
 }: AddMemberDialogProps) {
+  const { canViewSensitiveData } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -59,6 +61,12 @@ export function AddMemberDialog({
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
   const [managerId, setManagerId] = useState<string | null>(null);
+  
+  // Sensitive fields (HR/Super Admin only)
+  const [dateHired, setDateHired] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [personalEmail, setPersonalEmail] = useState("");
+  const [personalPhone, setPersonalPhone] = useState("");
 
   const resetForm = () => {
     setFirstName("");
@@ -73,6 +81,11 @@ export function AddMemberDialog({
     setManagerId(null);
     setAvatarFile(null);
     setAvatarPreview(null);
+    // Sensitive fields
+    setDateHired("");
+    setDateOfBirth("");
+    setPersonalEmail("");
+    setPersonalPhone("");
   };
 
   // Fetch employees for manager dropdown
@@ -140,6 +153,13 @@ export function AddMemberDialog({
           phone: phone || null,
           location: location || null,
           managerId: managerId || null,
+          // Sensitive fields (HR/Super Admin only)
+          ...(canViewSensitiveData() && {
+            dateHired: dateHired || null,
+            dateOfBirth: dateOfBirth || null,
+            personalEmail: personalEmail || null,
+            personalPhone: personalPhone || null,
+          }),
         },
       });
 
@@ -344,6 +364,59 @@ export function AddMemberDialog({
               />
             </div>
           </div>
+
+          {/* Sensitive HR Fields - Only for HR/Super Admin */}
+          {canViewSensitiveData() && (
+            <div className="border-t pt-4 mt-2">
+              <div className="flex items-center gap-2 mb-4">
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">HR Information</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dateHired">Date Hired</Label>
+                  <Input
+                    id="dateHired"
+                    type="date"
+                    value={dateHired}
+                    onChange={(e) => setDateHired(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="personalEmail">Personal Email</Label>
+                  <Input
+                    id="personalEmail"
+                    type="email"
+                    value={personalEmail}
+                    onChange={(e) => setPersonalEmail(e.target.value)}
+                    placeholder="personal@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="personalPhone">Personal Phone</Label>
+                  <Input
+                    id="personalPhone"
+                    value={personalPhone}
+                    onChange={(e) => setPersonalPhone(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <DialogFooter>
             <Button

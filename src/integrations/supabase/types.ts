@@ -853,6 +853,8 @@ export type Database = {
           last_name: string
           location: string | null
           manager_id: string | null
+          personal_email: string | null
+          personal_phone: string | null
           phone: string | null
           updated_at: string
           user_id: string
@@ -872,6 +874,8 @@ export type Database = {
           last_name: string
           location?: string | null
           manager_id?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -891,6 +895,8 @@ export type Database = {
           last_name?: string
           location?: string | null
           manager_id?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
           phone?: string | null
           updated_at?: string
           user_id?: string

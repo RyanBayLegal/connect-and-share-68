@@ -50,7 +50,11 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { email, password, firstName, lastName, role, departmentId, jobTitle, phone, location, managerId } = await req.json();
+    const { 
+      email, password, firstName, lastName, role, departmentId, 
+      jobTitle, phone, location, managerId,
+      dateHired, dateOfBirth, personalEmail, personalPhone 
+    } = await req.json();
 
     if (!email || !password || !firstName || !lastName) {
       throw new Error("Missing required fields: email, password, firstName, lastName");
@@ -88,6 +92,12 @@ serve(async (req) => {
     if (phone) profileData.phone = phone;
     if (location) profileData.location = location;
     if (managerId) profileData.manager_id = managerId;
+    
+    // Sensitive HR fields
+    if (dateHired) profileData.date_hired = dateHired;
+    if (dateOfBirth) profileData.date_of_birth = dateOfBirth;
+    if (personalEmail) profileData.personal_email = personalEmail;
+    if (personalPhone) profileData.personal_phone = personalPhone;
 
     const { error: profileError } = await supabaseAdmin.from("profiles").insert(profileData);
 

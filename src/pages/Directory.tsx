@@ -30,14 +30,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus, Pencil, X, Save, Users, ChevronRight } from "lucide-react";
+import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus, Pencil, X, Save, Users, ChevronRight, Calendar, Cake, Lock } from "lucide-react";
+import { format } from "date-fns";
 import type { Profile, Department } from "@/types/database";
 import { OrgChart } from "@/components/directory/OrgChart";
 import { AddMemberDialog } from "@/components/directory/AddMemberDialog";
 import { ManagerSelect } from "@/components/directory/ManagerSelect";
 
 export default function Directory() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, canViewSensitiveData } = useAuth();
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,6 +58,12 @@ export default function Directory() {
   const [editBio, setEditBio] = useState("");
   const [editManagerId, setEditManagerId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Sensitive fields (HR/Super Admin only)
+  const [editDateHired, setEditDateHired] = useState("");
+  const [editDateOfBirth, setEditDateOfBirth] = useState("");
+  const [editPersonalEmail, setEditPersonalEmail] = useState("");
+  const [editPersonalPhone, setEditPersonalPhone] = useState("");
 
   const fetchData = async () => {
     try {
@@ -104,6 +111,13 @@ export default function Directory() {
     setEditLocation(selectedEmployee.location || "");
     setEditBio(selectedEmployee.bio || "");
     setEditManagerId(selectedEmployee.manager_id || null);
+    // Sensitive fields (HR/Super Admin only)
+    if (canViewSensitiveData()) {
+      setEditDateHired(selectedEmployee.date_hired || "");
+      setEditDateOfBirth(selectedEmployee.date_of_birth || "");
+      setEditPersonalEmail(selectedEmployee.personal_email || "");
+      setEditPersonalPhone(selectedEmployee.personal_phone || "");
+    }
     setIsEditMode(true);
   };
 
@@ -115,6 +129,10 @@ export default function Directory() {
     setEditLocation("");
     setEditBio("");
     setEditManagerId(null);
+    setEditDateHired("");
+    setEditDateOfBirth("");
+    setEditPersonalEmail("");
+    setEditPersonalPhone("");
   };
 
   // Save profile changes
@@ -133,6 +151,14 @@ export default function Directory() {
       // Only admins can update manager_id
       if (isAdmin()) {
         updateData.manager_id = editManagerId || null;
+      }
+
+      // Only HR/Super Admin can update sensitive fields
+      if (canViewSensitiveData()) {
+        updateData.date_hired = editDateHired || null;
+        updateData.date_of_birth = editDateOfBirth || null;
+        updateData.personal_email = editPersonalEmail || null;
+        updateData.personal_phone = editPersonalPhone || null;
       }
 
       const { error } = await supabase
@@ -154,6 +180,12 @@ export default function Directory() {
           location: editLocation || null,
           bio: editBio || null,
           manager_id: isAdmin() ? (editManagerId || null) : prev.manager_id,
+          ...(canViewSensitiveData() && {
+            date_hired: editDateHired || null,
+            date_of_birth: editDateOfBirth || null,
+            personal_email: editPersonalEmail || null,
+            personal_phone: editPersonalPhone || null,
+          }),
         } : null
       );
       setIsEditMode(false);
@@ -735,6 +767,60 @@ export default function Directory() {
                     </div>
                   )}
 
+                  {/* Sensitive fields - HR/Super Admin only */}
+                  {canViewSensitiveData() && (
+                    <>
+                      <div className="border-t pt-4 mt-4">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Lock className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium text-muted-foreground">HR Information</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-date-hired">Date Hired</Label>
+                            <Input
+                              id="edit-date-hired"
+                              type="date"
+                              value={editDateHired}
+                              onChange={(e) => setEditDateHired(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-date-of-birth">Date of Birth</Label>
+                            <Input
+                              id="edit-date-of-birth"
+                              type="date"
+                              value={editDateOfBirth}
+                              onChange={(e) => setEditDateOfBirth(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mt-4">
+                          <Label htmlFor="edit-personal-email">Personal Email</Label>
+                          <Input
+                            id="edit-personal-email"
+                            type="email"
+                            value={editPersonalEmail}
+                            onChange={(e) => setEditPersonalEmail(e.target.value)}
+                            placeholder="personal@example.com"
+                          />
+                        </div>
+
+                        <div className="space-y-2 mt-4">
+                          <Label htmlFor="edit-personal-phone">Personal Phone</Label>
+                          <Input
+                            id="edit-personal-phone"
+                            value={editPersonalPhone}
+                            onChange={(e) => setEditPersonalPhone(e.target.value)}
+                            placeholder="+1 (555) 123-4567"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   <DialogFooter className="gap-2">
                     <Button variant="outline" onClick={cancelEditMode} disabled={isSaving}>
                       <X className="h-4 w-4 mr-1" />
@@ -804,6 +890,44 @@ export default function Directory() {
                       </div>
                     )}
                   </div>
+
+                  {/* Sensitive HR Information - visible only to HR and Super Admin */}
+                  {canViewSensitiveData() && (
+                    <div className="space-y-3 border-t pt-4 mt-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Lock className="h-4 w-4" />
+                        <span>HR Information</span>
+                      </div>
+                      {selectedEmployee.date_hired && (
+                        <div className="flex items-center gap-3">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>Hired: {format(new Date(selectedEmployee.date_hired), 'MMM d, yyyy')}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.date_of_birth && (
+                        <div className="flex items-center gap-3">
+                          <Cake className="h-4 w-4 text-muted-foreground" />
+                          <span>Birthday: {format(new Date(selectedEmployee.date_of_birth), 'MMM d, yyyy')}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.personal_email && (
+                        <div className="flex items-center gap-3">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">Personal: {selectedEmployee.personal_email}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.personal_phone && (
+                        <div className="flex items-center gap-3">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">Personal: {selectedEmployee.personal_phone}</span>
+                        </div>
+                      )}
+                      {!selectedEmployee.date_hired && !selectedEmployee.date_of_birth && 
+                       !selectedEmployee.personal_email && !selectedEmployee.personal_phone && (
+                        <p className="text-sm text-muted-foreground italic">No HR information on file</p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Direct Reports Section */}
                   {getDirectReports(selectedEmployee.id).length > 0 && (
