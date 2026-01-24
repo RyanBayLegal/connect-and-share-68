@@ -1,4 +1,4 @@
-export type AppRole = 'super_admin' | 'department_manager' | 'employee' | 'contractor' | 'training_manager';
+export type AppRole = 'super_admin' | 'department_manager' | 'employee' | 'contractor' | 'training_manager' | 'hr_manager';
 
 export interface Department {
   id: string;
@@ -27,6 +27,9 @@ export interface Profile {
   date_hired: string | null;
   personal_email: string | null;
   personal_phone: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relationship: string | null;
   created_at: string;
   updated_at: string;
   department?: Department;
@@ -287,4 +290,113 @@ export interface GoogleReview {
   is_featured: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// Time Tracking Types
+export interface TimeTrackingStatus {
+  id: string;
+  name: string;
+  color: string;
+  is_paid: boolean;
+  is_active: boolean;
+  position: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TimeEntry {
+  id: string;
+  employee_id: string;
+  clock_in: string;
+  clock_out: string | null;
+  status_id: string | null;
+  notes: string | null;
+  is_manual_entry: boolean;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  status?: TimeTrackingStatus;
+  employee?: Profile;
+}
+
+export interface Timesheet {
+  id: string;
+  employee_id: string;
+  period_start: string;
+  period_end: string;
+  total_regular_hours: number;
+  total_overtime_hours: number;
+  total_pto_hours: number;
+  status: string;
+  submitted_at: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  employee?: Profile;
+}
+
+// Payroll Types
+export interface PayrollSettings {
+  id: string;
+  employee_id: string;
+  pay_type: string;
+  hourly_rate: number | null;
+  annual_salary: number | null;
+  overtime_multiplier: number;
+  standard_hours_per_week: number;
+  tax_withholding_percent: number;
+  created_at: string;
+  updated_at: string;
+  employee?: Profile;
+}
+
+export interface PayrollRun {
+  id: string;
+  period_start: string;
+  period_end: string;
+  pay_date: string;
+  status: string;
+  created_by: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayStub {
+  id: string;
+  payroll_run_id: string;
+  employee_id: string;
+  regular_hours: number;
+  overtime_hours: number;
+  pto_hours: number;
+  gross_pay: number;
+  deductions: Record<string, number>;
+  net_pay: number;
+  created_at: string;
+  payroll_run?: PayrollRun;
+  employee?: Profile;
+}
+
+export interface PayrollDeductionType {
+  id: string;
+  name: string;
+  description: string | null;
+  is_percentage: boolean;
+  default_amount: number | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface EmployeeDeduction {
+  id: string;
+  employee_id: string;
+  deduction_type_id: string;
+  amount: number;
+  is_active: boolean;
+  created_at: string;
+  deduction_type?: PayrollDeductionType;
 }

@@ -14,6 +14,8 @@ import {
   GraduationCap,
   Building2,
   ClipboardList,
+  Clock,
+  DollarSign,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,10 +52,11 @@ const mainNavItems = [
   { title: "Knowledge Base", url: "/wiki", icon: BookOpen },
   { title: "Events", url: "/events", icon: CalendarDays },
   { title: "Training", url: "/training", icon: GraduationCap },
+  { title: "Time Tracking", url: "/time-tracking", icon: Clock },
 ];
 
 export function AppSidebar() {
-  const { profile, isAdmin, hasRole, isSuperAdmin, signOut, rolesLoaded } = useAuth();
+  const { profile, isAdmin, hasRole, isSuperAdmin, isHRManager, signOut, rolesLoaded } = useAuth();
   const location = useLocation();
 
   // Access checks - use rolesLoaded from context for reliable evaluation
@@ -62,11 +65,12 @@ export function AppSidebar() {
   const isTrainingDepartment = departmentName.includes("training");
   const isTrainingManager = hasRole("training_manager");
   
-  const canSeeHROnboarding = isSuperAdmin() || isHRDepartment;
+  const canSeeHROnboarding = isSuperAdmin() || isHRDepartment || isHRManager();
   const canSeeTrainingManagement = isSuperAdmin() || isTrainingDepartment || isTrainingManager;
+  const canSeeHRAdmin = isSuperAdmin() || isHRManager();
   
   // Only show admin section once roles are fully loaded
-  const showAdminSection = rolesLoaded && (isSuperAdmin() || canSeeHROnboarding || canSeeTrainingManagement);
+  const showAdminSection = rolesLoaded && (isSuperAdmin() || canSeeHROnboarding || canSeeTrainingManagement || canSeeHRAdmin);
 
   const initials = profile
     ? `${profile.first_name[0]}${profile.last_name[0]}`
@@ -150,6 +154,45 @@ export function AppSidebar() {
                       <NavLink to="/training-management">
                         <GraduationCap className="h-4 w-4" />
                         <span>Training Mgmt</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {canSeeHRAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === "/time-management"}
+                    >
+                      <NavLink to="/time-management">
+                        <Clock className="h-4 w-4" />
+                        <span>Time Management</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {canSeeHRAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === "/payroll"}
+                    >
+                      <NavLink to="/payroll">
+                        <DollarSign className="h-4 w-4" />
+                        <span>Payroll</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {canSeeHRAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === "/hr-settings"}
+                    >
+                      <NavLink to="/hr-settings">
+                        <Settings className="h-4 w-4" />
+                        <span>HR Settings</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

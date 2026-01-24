@@ -15,6 +15,7 @@ interface AuthContextType {
   hasRole: (role: AppRole) => boolean;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
+  isHRManager: () => boolean;
   canViewSensitiveData: () => boolean;
 }
 
@@ -122,11 +123,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     roles.includes("super_admin") || roles.includes("department_manager");
   
   const isSuperAdmin = () => roles.includes("super_admin");
+  
+  // Check if user is HR Manager or Super Admin
+  const isHRManager = () => 
+    roles.includes("super_admin") || roles.includes("hr_manager");
 
-  // Check if current user can view sensitive employee data (HR or Super Admin)
+  // Check if current user can view sensitive employee data (HR Manager or Super Admin)
   const canViewSensitiveData = () => {
-    if (roles.includes("super_admin")) return true;
-    // Check if user is in HR department
+    if (roles.includes("super_admin") || roles.includes("hr_manager")) return true;
+    // Also check if user is in HR department
     return profile?.department?.name === "Human Resources";
   };
 
@@ -144,6 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hasRole,
         isAdmin,
         isSuperAdmin,
+        isHRManager,
         canViewSensitiveData,
       }}
     >
