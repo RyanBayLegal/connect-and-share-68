@@ -64,7 +64,7 @@ export function GlobalSearch() {
         // Search employees
         supabase
           .from("profiles")
-          .select("*, department:departments(*)")
+          .select("*, department:departments!profiles_department_id_fkey(*)")
           .eq("is_active", true)
           .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm},job_title.ilike.${searchTerm}`)
           .limit(5),

@@ -99,7 +99,7 @@ export default function Documents() {
       // Fetch folders in current directory
       const foldersQuery = supabase
         .from("document_folders")
-        .select("*, department:departments(*)")
+        .select("*, department:departments!document_folders_department_id_fkey(*)")
         .order("name");
 
       if (currentFolderId) {

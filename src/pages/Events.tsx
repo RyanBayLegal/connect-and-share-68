@@ -99,7 +99,7 @@ export default function Events() {
   const fetchData = async () => {
     try {
       const [{ data: eventsData }, { data: deptsData }] = await Promise.all([
-        supabase.from("events").select("*, department:departments(*)").order("start_date"),
+        supabase.from("events").select("*, department:departments!events_department_id_fkey(*)").order("start_date"),
         supabase.from("departments").select("*").order("name"),
       ]);
 

@@ -44,7 +44,7 @@ export function AdminUsers() {
   const fetchData = async () => {
     try {
       const [{ data: profilesData }, { data: rolesData }, { data: deptsData }] = await Promise.all([
-        supabase.from("profiles").select("*, department:departments(*)").order("first_name"),
+        supabase.from("profiles").select("*, department:departments!profiles_department_id_fkey(*)").order("first_name"),
         supabase.from("user_roles").select("*"),
         supabase.from("departments").select("*").order("name"),
       ]);
