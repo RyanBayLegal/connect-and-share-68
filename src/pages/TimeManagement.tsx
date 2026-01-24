@@ -21,7 +21,7 @@ interface EmployeeStatus {
 }
 
 export default function TimeManagement() {
-  const { isHRManager } = useAuth();
+  const { isHRManager, rolesLoaded } = useAuth();
   const { toast } = useToast();
   const [employeeStatuses, setEmployeeStatuses] = useState<EmployeeStatus[]>([]);
   const [pendingTimesheets, setPendingTimesheets] = useState<(Timesheet & { employee?: Profile })[]>([]);
@@ -200,6 +200,15 @@ export default function TimeManagement() {
 
   const workingCount = employeeStatuses.filter((es) => es.currentEntry !== null).length;
   const offCount = employeeStatuses.filter((es) => es.currentEntry === null).length;
+
+  // Wait for roles to load before checking access
+  if (!rolesLoaded) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!isHRManager()) {
     return (

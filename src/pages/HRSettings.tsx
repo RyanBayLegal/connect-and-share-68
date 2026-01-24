@@ -14,7 +14,7 @@ import { Plus, Edit2, Trash2, GripVertical, Clock, DollarSign, Settings } from "
 import type { TimeTrackingStatus, PayrollDeductionType } from "@/types/database";
 
 export default function HRSettings() {
-  const { isHRManager } = useAuth();
+  const { isHRManager, rolesLoaded } = useAuth();
   const { toast } = useToast();
   const [statuses, setStatuses] = useState<TimeTrackingStatus[]>([]);
   const [deductionTypes, setDeductionTypes] = useState<PayrollDeductionType[]>([]);
@@ -203,6 +203,15 @@ export default function HRSettings() {
     setDeductionDefaultAmount(deduction.default_amount?.toString() || "");
     setDeductionDialogOpen(true);
   };
+
+  // Wait for roles to load before checking access
+  if (!rolesLoaded) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!isHRManager()) {
     return (
