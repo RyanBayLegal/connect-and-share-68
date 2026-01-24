@@ -18,7 +18,7 @@ import html2pdf from "html2pdf.js";
 import type { Profile, PayrollSettings, PayrollRun, PayStub, PayrollDeductionType, EmployeeDeduction } from "@/types/database";
 
 export default function Payroll() {
-  const { isHRManager, profile: currentProfile } = useAuth();
+  const { isHRManager, rolesLoaded, profile: currentProfile } = useAuth();
   const { toast } = useToast();
   const [employees, setEmployees] = useState<(Profile & { payroll_settings?: PayrollSettings })[]>([]);
   const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>([]);
@@ -370,6 +370,15 @@ export default function Payroll() {
       setIsGeneratingPdf(false);
     }
   };
+
+  // Wait for roles to load before checking access
+  if (!rolesLoaded) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!isHRManager()) {
     return (

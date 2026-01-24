@@ -32,7 +32,7 @@ interface EmployeeStatus {
 }
 
 export default function HRDashboard() {
-  const { isHRManager } = useAuth();
+  const { isHRManager, rolesLoaded } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [employeeStatuses, setEmployeeStatuses] = useState<EmployeeStatus[]>([]);
   const [pendingTimesheets, setPendingTimesheets] = useState<(Timesheet & { employee?: Profile })[]>([]);
@@ -139,6 +139,15 @@ export default function HRDashboard() {
     const name = `${es.employee.first_name} ${es.employee.last_name}`.toLowerCase();
     return name.includes(searchQuery.toLowerCase());
   });
+
+  // Wait for roles to load before checking access
+  if (!rolesLoaded) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!isHRManager()) {
     return <Navigate to="/" replace />;
