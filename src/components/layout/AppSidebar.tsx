@@ -66,7 +66,7 @@ export function AppSidebar() {
   const canSeeTrainingManagement = isSuperAdmin() || isTrainingDepartment || isTrainingManager;
   
   // Only show admin section once roles are fully loaded
-  const showAdminSection = rolesLoaded && (isAdmin() || canSeeHROnboarding || canSeeTrainingManagement);
+  const showAdminSection = rolesLoaded && (isSuperAdmin() || canSeeHROnboarding || canSeeTrainingManagement);
 
   const initials = profile
     ? `${profile.first_name[0]}${profile.last_name[0]}`
@@ -115,7 +115,7 @@ export function AppSidebar() {
             <SidebarGroupLabel className="text-sidebar-foreground/60">Administration</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {isAdmin() && (
+                {isSuperAdmin() && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
