@@ -15,6 +15,7 @@ import {
   Building2,
   ClipboardList,
   Clock,
+  Briefcase,
   DollarSign,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -53,6 +54,7 @@ const mainNavItems = [
   { title: "Events", url: "/events", icon: CalendarDays },
   { title: "Training", url: "/training", icon: GraduationCap },
   { title: "Time Tracking", url: "/time-tracking", icon: Clock },
+  { title: "My HR", url: "/my-hr", icon: Briefcase },
 ];
 
 export function AppSidebar() {

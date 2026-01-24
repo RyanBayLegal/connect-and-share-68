@@ -400,3 +400,22 @@ export interface EmployeeDeduction {
   created_at: string;
   deduction_type?: PayrollDeductionType;
 }
+
+// Time-Off Request Types
+export interface TimeOffRequest {
+  id: string;
+  employee_id: string;
+  request_type: string;
+  start_date: string;
+  end_date: string;
+  hours_requested: number;
+  reason: string | null;
+  status: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  employee?: Profile;
+  reviewer?: Profile;
+}

@@ -1439,6 +1439,54 @@ export type Database = {
           },
         ]
       }
+      time_off_requests: {
+        Row: {
+          created_at: string | null
+          employee_id: string
+          end_date: string
+          hours_requested: number | null
+          id: string
+          reason: string | null
+          request_type: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          employee_id: string
+          end_date: string
+          hours_requested?: number | null
+          id?: string
+          reason?: string | null
+          request_type?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          employee_id?: string
+          end_date?: string
+          hours_requested?: number | null
+          id?: string
+          reason?: string | null
+          request_type?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       time_tracking_statuses: {
         Row: {
           color: string
