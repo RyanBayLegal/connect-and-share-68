@@ -212,6 +212,7 @@ export function AdminUsers() {
                       <SelectItem value="super_admin">Super Admin</SelectItem>
                       <SelectItem value="department_manager">Dept Manager</SelectItem>
                       <SelectItem value="training_manager">Training Manager</SelectItem>
+                      <SelectItem value="hr_manager">HR Manager</SelectItem>
                       <SelectItem value="employee">Employee</SelectItem>
                       <SelectItem value="contractor">Contractor</SelectItem>
                     </SelectContent>
@@ -308,6 +309,9 @@ export function AdminUsers() {
                       )}
                       {role === "department_manager" && (
                         <p className="text-xs text-muted-foreground">Can manage their department</p>
+                      )}
+                      {role === "hr_manager" && (
+                        <p className="text-xs text-muted-foreground">Can manage time tracking, payroll, and sensitive employee data</p>
                       )}
                     </div>
                   </label>

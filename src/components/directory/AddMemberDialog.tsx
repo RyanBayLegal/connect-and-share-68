@@ -35,6 +35,8 @@ const ROLES: { value: AppRole; label: string }[] = [
   { value: "employee", label: "Employee" },
   { value: "contractor", label: "Contractor" },
   { value: "department_manager", label: "Department Manager" },
+  { value: "training_manager", label: "Training Manager" },
+  { value: "hr_manager", label: "HR Manager" },
   { value: "super_admin", label: "Super Admin" },
 ];
 
@@ -66,6 +68,11 @@ export function AddMemberDialog({
   const [dateHired, setDateHired] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [personalEmail, setPersonalEmail] = useState("");
+  
+  // Emergency contact fields
+  const [emergencyContactName, setEmergencyContactName] = useState("");
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
+  const [emergencyContactRelationship, setEmergencyContactRelationship] = useState("");
   const [personalPhone, setPersonalPhone] = useState("");
 
   const resetForm = () => {
@@ -86,6 +93,10 @@ export function AddMemberDialog({
     setDateOfBirth("");
     setPersonalEmail("");
     setPersonalPhone("");
+    // Emergency contacts
+    setEmergencyContactName("");
+    setEmergencyContactPhone("");
+    setEmergencyContactRelationship("");
   };
 
   // Fetch employees for manager dropdown
@@ -159,6 +170,9 @@ export function AddMemberDialog({
             dateOfBirth: dateOfBirth || null,
             personalEmail: personalEmail || null,
             personalPhone: personalPhone || null,
+            emergencyContactName: emergencyContactName || null,
+            emergencyContactPhone: emergencyContactPhone || null,
+            emergencyContactRelationship: emergencyContactRelationship || null,
           }),
         },
       });
@@ -411,6 +425,40 @@ export function AddMemberDialog({
                     id="personalPhone"
                     value={personalPhone}
                     onChange={(e) => setPersonalPhone(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+              </div>
+
+              {/* Emergency Contact */}
+              <div className="border-t pt-4 mt-4">
+                <span className="text-sm font-medium text-muted-foreground">Emergency Contact</span>
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyContactName">Contact Name</Label>
+                    <Input
+                      id="emergencyContactName"
+                      value={emergencyContactName}
+                      onChange={(e) => setEmergencyContactName(e.target.value)}
+                      placeholder="Jane Doe"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyContactRelationship">Relationship</Label>
+                    <Input
+                      id="emergencyContactRelationship"
+                      value={emergencyContactRelationship}
+                      onChange={(e) => setEmergencyContactRelationship(e.target.value)}
+                      placeholder="Spouse, Parent, etc."
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
+                  <Input
+                    id="emergencyContactPhone"
+                    value={emergencyContactPhone}
+                    onChange={(e) => setEmergencyContactPhone(e.target.value)}
                     placeholder="+1 (555) 123-4567"
                   />
                 </div>

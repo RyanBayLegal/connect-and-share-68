@@ -14,4 +14,5 @@ export const ROLE_LABELS = {
   employee: "Employee",
   contractor: "Contractor/Guest",
   training_manager: "Training Manager",
+  hr_manager: "HR Manager",
 } as const;
