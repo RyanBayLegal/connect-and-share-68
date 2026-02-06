@@ -28,6 +28,7 @@ import { ChatGPTWidget } from "@/components/dashboard/ChatGPTWidget";
 import { BirthdaysAnniversariesWidget } from "@/components/dashboard/BirthdaysAnniversariesWidget";
 import { GoogleReviewsWidget } from "@/components/dashboard/GoogleReviewsWidget";
 import { TrainingQuickActionsWidget } from "@/components/dashboard/TrainingQuickActionsWidget";
+import { HRQuickActionsWidget } from "@/components/dashboard/HRQuickActionsWidget";
 
 
 interface DashboardStats {
@@ -150,6 +151,11 @@ export default function Dashboard() {
       {/* Birthdays & Anniversaries Widget */}
       <section className="container pt-8">
         <BirthdaysAnniversariesWidget />
+      </section>
+
+      {/* HR Quick Actions - only visible to HR managers */}
+      <section className="container pt-4">
+        <HRQuickActionsWidget />
       </section>
 
       {/* Training Quick Actions - only visible to training managers */}
