@@ -1,232 +1,128 @@
 
+## Add HR Manager Quick Actions Widget to Dashboard
 
-# Implementation Plan: Directory Profile Editing & Manager Assignment
-
-This plan adds profile editing for employees, manager selection for org chart relationships, and fixes the page margins.
-
----
-
-## Overview
-
-| Feature | Description |
-|---------|-------------|
-| Profile Editing | Employees can edit their own job title, phone, location, and bio from directory |
-| Manager Assignment | Admins can set manager relationships when creating/editing profiles |
-| Increased Margins | Apply larger, more consistent margins to the Directory page |
+This plan adds an HR-specific quick actions section to the main Dashboard that is only visible to users with the `hr_manager` role or Super Admins.
 
 ---
 
-## Part 1: Fix Page Margins
+### Overview
 
-### Problem
-Current margins (`px-4 md:px-6 lg:px-8 py-6`) are too close to the edge for the user's preference.
-
-### Solution
-Apply larger padding similar to the Dashboard pattern, using a container approach with more generous spacing.
-
-### Changes to `src/pages/Directory.tsx`
-- Change wrapper padding to `px-6 md:px-10 lg:px-16 py-8`
-- This provides approximately 1.5rem on mobile, 2.5rem on tablet, and 4rem on desktop
+Create a new widget similar to `TrainingQuickActionsWidget` that displays:
+- Key HR metrics (pending leave requests, active employees, pending approvals)
+- Quick action buttons for the 7 requested HR functions
 
 ---
 
-## Part 2: Profile Editing from Directory
+### Cross-Reference: Existing Pages
 
-### Current Behavior
-- The employee detail dialog is read-only
-- Users must go to Settings to edit their profile
+| HR Button | Existing Page | Route |
+|-----------|---------------|-------|
+| Employee Records | Directory | `/directory` |
+| Payroll Management | Payroll | `/payroll` |
+| Leave Requests | Time Management | `/time-management` |
+| Compliance Reports | Documents | `/documents` |
+| Recruitment Dashboard | HR Onboarding | `/hr-onboarding` |
+| Employee Benefits | HR Settings | `/hr-settings` |
+| Training & Development | Training Management | `/training-management` |
 
-### New Behavior
-- Users clicking their own profile see an "Edit Profile" mode
-- Admins can edit any profile
-- Editable fields: Job Title, Phone, Location, Bio
-- Non-editable: Name, Email, Department (admin-only changes)
-
-### UI Approach
-Add an "Edit" button in the detail dialog that switches to edit mode with input fields.
-
-### Changes to `src/pages/Directory.tsx`
-
-**1. New state variables:**
-```text
-isEditMode: boolean
-editJobTitle: string
-editPhone: string
-editLocation: string
-editBio: string
-isSaving: boolean
-```
-
-**2. Add edit permission check:**
-```text
-canEditProfile(employee) = own profile OR isAdmin()
-```
-
-**3. Add edit handler function:**
-- Update the profile record in database
-- Show success toast
-- Refresh the employee list
-- Exit edit mode
-
-**4. Modify detail dialog:**
-- Add Edit button in header (when can edit)
-- Toggle between view mode and edit mode
-- Edit mode shows input fields instead of static text
-- Save/Cancel buttons in edit mode
+All pages already exist - we just need to surface them with the widget.
 
 ---
 
-## Part 3: Manager Assignment
+### Albonn's Role Status
 
-### Current State
-- Profiles have `manager_id` field (already exists)
-- OrgChart uses this to build hierarchy
-- AddMemberDialog does not include manager selection
-
-### Solution
-Add manager selection dropdown to both:
-1. AddMemberDialog (when creating new members)
-2. Directory edit mode (for admins editing existing profiles)
-
-### New Component: Manager Select Dropdown
-- Dropdown showing all other employees
-- Grouped by department for easier finding
-- Search/filter capability
-- "No Manager" option for top-level positions
-
-### Changes to `src/components/directory/AddMemberDialog.tsx`
-
-**1. Add manager state:**
-```text
-managerId: string | null
-```
-
-**2. Fetch employees list (for manager dropdown)**
-
-**3. Add Manager select field after Department/Role row:**
-- Label: "Reports To"
-- Dropdown with employee names
-- Show department next to name for context
-
-**4. Include manager_id in profile creation**
-
-### Changes to `src/pages/Directory.tsx`
-
-**1. Add edit state for manager:**
-```text
-editManagerId: string | null
-```
-
-**2. In edit mode (admin only), show manager dropdown**
-
-**3. Include manager_id in profile update**
+Verified in database: `albonn@baylegal.com` already has the `hr_manager` role assigned.
 
 ---
 
-## Implementation Summary
+### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/components/dashboard/HRQuickActionsWidget.tsx` | HR-specific widget with stats and navigation buttons |
 
 ### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/Directory.tsx` | Larger margins, edit mode in detail dialog, manager selection for admins |
-| `src/components/directory/AddMemberDialog.tsx` | Add manager selection dropdown |
+| `src/pages/Dashboard.tsx` | Import and render the new HR widget |
 
 ---
 
-## UI/UX Details
+### Widget Design
 
-### Employee Detail Dialog - View Mode
-```text
-+----------------------------------+
-| Employee Profile          [Edit] |
-+----------------------------------+
-|         [Avatar + Upload]        |
-|       Name + Badge + Title       |
-|                                  |
-|   Bio text if present            |
-|                                  |
-|   Email: value                   |
-|   Phone: value                   |
-|   Location: value                |
-|   Department: value              |
-|   Reports To: Manager Name       |
-|                                  |
-|  [Send Email]  [Message]         |
-+----------------------------------+
 ```
-
-### Employee Detail Dialog - Edit Mode
-```text
-+----------------------------------+
-| Edit Profile                     |
-+----------------------------------+
-|         [Avatar + Upload]        |
-|                                  |
-|   Job Title                      |
-|   [__________________________]   |
-|                                  |
-|   Phone                          |
-|   [__________________________]   |
-|                                  |
-|   Location                       |
-|   [__________________________]   |
-|                                  |
-|   Bio                            |
-|   [__________________________]   |
-|   [__________________________]   |
-|                                  |
-|   Reports To (admin only)        |
-|   [Select Manager v]             |
-|                                  |
-|   [Cancel]  [Save Changes]       |
-+----------------------------------+
-```
-
-### Add Member Dialog - With Manager
-```text
-+----------------------------------+
-|     Create New Team Member       |
-+----------------------------------+
-| ... existing fields ...          |
-|                                  |
-| Reports To                       |
-| [Select Manager v]               |
-|                                  |
-| ... rest of form ...             |
-+----------------------------------+
++------------------------------------------------------------------+
+| HR Management                                                     |
++------------------------------------------------------------------+
+|  [Pending Requests: 5]  [Active Employees: 42]  [Approvals: 3]   |
++------------------------------------------------------------------+
+|                                                                   |
+| [Employee Records]  [Payroll Management]  [Leave Requests]       |
+|                                                                   |
+| [Compliance Reports]  [Recruitment]  [Employee Benefits]          |
+|                                                                   |
+| [Training & Development]                                          |
++------------------------------------------------------------------+
 ```
 
 ---
 
-## Security Considerations
+### Implementation Details
 
-### Profile Editing Permissions
-- Users can only edit their own profile (job_title, phone, location, bio)
-- Admins can edit any profile including manager assignment
-- RLS policy "Users can update own profile" already allows this
-- RLS policy "Admins can manage profiles" allows admin updates
+**1. `HRQuickActionsWidget.tsx`**
 
-### Manager Assignment
-- Only admins can set manager relationships (enforced in UI and validated by RLS)
-- Self-referential manager assignment prevented in code
+- Import `useAuth` and check `isHRManager()` and `rolesLoaded`
+- Show only if user is HR Manager or Super Admin
+- Fetch quick stats:
+  - Pending time-off requests (from `time_off_requests` where status = 'pending')
+  - Active employees (from `profiles` where is_active = true)
+  - Pending timesheet approvals (from `timesheets` where status = 'submitted')
+- Display 7 navigation buttons with icons:
+  - Users icon for Employee Records
+  - DollarSign for Payroll Management
+  - Calendar for Leave Requests
+  - FileText for Compliance Reports
+  - ClipboardList for Recruitment Dashboard
+  - Heart for Employee Benefits
+  - GraduationCap for Training & Development
+
+**2. Dashboard Integration**
+
+Add the widget after the Birthdays section and before Training Quick Actions:
+```typescript
+import { HRQuickActionsWidget } from "@/components/dashboard/HRQuickActionsWidget";
+
+// In the return statement
+<section className="container pt-4">
+  <HRQuickActionsWidget />
+</section>
+```
 
 ---
 
-## Technical Notes
+### Access Control
 
-### Manager Dropdown Implementation
-- Query all active profiles except the current employee
-- Sort alphabetically by name
-- Show format: "First Last (Department)"
-- Include "No Manager" option at top
+- Uses `isHRManager()` from AuthContext which returns `true` for:
+  - Users with `hr_manager` role
+  - Users with `super_admin` role
+- Uses `rolesLoaded` to prevent flash of incorrect content
 
-### State Management
-- Edit mode state stays local to dialog
-- On successful save, refresh employee list
-- On cancel, revert to original values
+---
 
-### Responsive Behavior
-- Edit form uses same responsive grid as AddMemberDialog
-- Margins scale with screen size for consistent appearance
+### Visual Style
 
+- Matches the existing `TrainingQuickActionsWidget` gradient style
+- Uses a blue/teal gradient to differentiate from training (purple)
+- Responsive grid layout for buttons (3 columns on desktop, 2 on tablet, 1 on mobile)
+- Each button has an icon and label
+
+---
+
+### User Experience
+
+When an HR manager (like Albonn) loads the Dashboard:
+1. The widget appears after Birthdays section
+2. Shows real-time stats for pending items
+3. Provides one-click access to all HR functions
+4. Regular employees do not see this widget
