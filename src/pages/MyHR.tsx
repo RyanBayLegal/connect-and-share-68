@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, parseISO, differenceInMinutes } from "date-fns";
-import { FileText, Clock, Calendar, Download, Plus, X } from "lucide-react";
+import { FileText, Clock, Calendar, Download, Plus, X, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { TimeEntry, TimeTrackingStatus, PayrollRun } from "@/types/database";
+import { PTOBalanceWidget } from "@/components/dashboard/PTOBalanceWidget";
 
 interface PayStubWithRun {
   id: string;
@@ -327,8 +328,12 @@ export default function MyHR() {
         </p>
       </div>
 
-      <Tabs defaultValue="pay-stubs" className="space-y-4">
+      <Tabs defaultValue="pto-balances" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="pto-balances" className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            PTO Balances
+          </TabsTrigger>
           <TabsTrigger value="pay-stubs" className="gap-2">
             <FileText className="h-4 w-4" />
             My Pay Stubs
@@ -342,6 +347,11 @@ export default function MyHR() {
             Time-Off Requests
           </TabsTrigger>
         </TabsList>
+
+        {/* PTO Balances Tab */}
+        <TabsContent value="pto-balances">
+          <PTOBalanceWidget />
+        </TabsContent>
 
         {/* Pay Stubs Tab */}
         <TabsContent value="pay-stubs" className="space-y-4">
