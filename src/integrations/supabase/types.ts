@@ -1192,6 +1192,53 @@ export type Database = {
           },
         ]
       }
+      pto_balances: {
+        Row: {
+          accrual_rate: number
+          balance_type: string
+          created_at: string
+          employee_id: string
+          id: string
+          last_accrual_date: string | null
+          total_allocated: number
+          total_used: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          accrual_rate?: number
+          balance_type?: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          last_accrual_date?: string | null
+          total_allocated?: number
+          total_used?: number
+          updated_at?: string
+          year?: number
+        }
+        Update: {
+          accrual_rate?: number
+          balance_type?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          last_accrual_date?: string | null
+          total_allocated?: number
+          total_used?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pto_balances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_activity: {
         Row: {
           action: string
