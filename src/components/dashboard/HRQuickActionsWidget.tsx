@@ -85,7 +85,7 @@ export function HRQuickActionsWidget() {
   if (!canAccess) return null;
 
   return (
-    <Card className="bg-gradient-to-br from-accent/10 to-primary/10 border-primary/20">
+    <Card className="glass-card neon-border">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Briefcase className="h-5 w-5 text-primary" />
@@ -138,7 +138,7 @@ export function HRQuickActionsWidget() {
                   size="sm"
                   variant="outline"
                   asChild
-                  className="justify-start hover:bg-primary/10 hover:border-primary/30"
+                  className="justify-start glass-panel hover:neon-glow-sm hover:border-primary/40 border-border/30"
                 >
                   <Link to={action.href}>
                     <action.icon className="h-4 w-4 mr-2 text-primary" />

@@ -60,22 +60,22 @@ export default function Login() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[hsl(220,60%,15%)]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[hsl(220,60%,15%)] to-[hsl(210,80%,25%)] px-4 relative overflow-hidden">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 relative overflow-hidden">
       {/* Diamond pattern overlay */}
       <div className="absolute inset-0 diamond-pattern" />
       
-      {/* Decorative elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-[hsl(210,80%,45%)] rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-[hsl(45,90%,55%)] rounded-full blur-3xl opacity-10 translate-y-1/2 -translate-x-1/2" />
+      {/* Decorative glow elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-primary rounded-full blur-[120px] opacity-10 -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary rounded-full blur-[120px] opacity-5 translate-y-1/2 -translate-x-1/2" />
 
-      <Card className="w-full max-w-md relative z-10 shadow-2xl border-0">
+      <Card className="w-full max-w-md relative z-10 glass-card neon-border border-0">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto mb-4">
             <img 
