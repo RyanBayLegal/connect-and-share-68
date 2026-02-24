@@ -127,10 +127,11 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col">
       {/* Hero Section with Diamond Pattern */}
-      <section className="relative bg-gradient-to-br from-muted/50 to-background overflow-hidden">
-        <div className="absolute inset-0 diamond-pattern opacity-30" />
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 diamond-pattern opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="container relative z-10 py-16 md:py-24 text-center">
-          <h1 className="text-3xl md:text-5xl font-light text-primary tracking-wide">
+          <h1 className="text-3xl md:text-5xl font-light tracking-wide neon-text">
             {COMPANY_NAME} Hub
           </h1>
           <p className="mt-4 text-muted-foreground text-lg">
@@ -140,9 +141,9 @@ export default function Dashboard() {
       </section>
 
       {/* Welcome Banner */}
-      <section className="bg-[hsl(220,60%,15%)] text-white py-4">
+      <section className="glass-panel border-y border-primary/20 py-4">
         <div className="container text-center">
-          <p className="text-sm md:text-base">
+          <p className="text-sm md:text-base text-foreground/80">
             Welcome{profile?.first_name ? `, ${profile.first_name}` : ""} to the Bay Legal Knowledge Hub — your go-to place for policies, forms, and helpful resources designed to support you every day.
           </p>
         </div>
@@ -165,12 +166,12 @@ export default function Dashboard() {
 
       {/* Resources - Full Width */}
       <section className="container py-8">
-        <Card className="bg-[hsl(220,50%,12%)]">
+        <Card className="glass-card neon-border">
               <CardHeader className="pb-4">
-                <CardTitle className="text-2xl font-light text-primary text-center">
+                <CardTitle className="text-2xl font-light text-center neon-text">
                   YOUR RESOURCES
                 </CardTitle>
-                <div className="w-24 h-0.5 bg-primary/30 mx-auto" />
+                <div className="w-24 h-0.5 bg-primary/40 mx-auto rounded-full neon-glow-sm" />
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -178,15 +179,15 @@ export default function Dashboard() {
                     <Link
                       key={resource.href}
                       to={resource.href}
-                      className="group flex flex-col items-center text-center p-4 rounded-xl transition-all duration-300 hover:bg-white/10 hover:-translate-y-2 focus-ring"
+                      className="group flex flex-col items-center text-center p-4 rounded-xl transition-all duration-300 hover:bg-primary/5 hover:-translate-y-2 focus-ring"
                     >
-                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/20 flex items-center justify-center mb-3 transition-all duration-300 group-hover:bg-primary/40 group-hover:scale-110 group-hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)]">
+                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full glass-panel flex items-center justify-center mb-3 transition-all duration-300 group-hover:neon-glow-md group-hover:scale-110 group-hover:border-primary/40">
                         <resource.icon className="h-8 w-8 md:h-10 md:w-10 text-primary transition-transform duration-300 group-hover:scale-110" />
                       </div>
-                      <span className="text-primary font-medium text-xs md:text-sm tracking-wide transition-colors group-hover:text-accent">
+                      <span className="text-primary font-medium text-xs md:text-sm tracking-wide transition-colors group-hover:text-foreground">
                         {resource.title}
                       </span>
-                      <span className="text-muted-foreground text-xs mt-1 hidden md:block transition-colors group-hover:text-white/70">
+                      <span className="text-muted-foreground text-xs mt-1 hidden md:block transition-colors group-hover:text-foreground/70">
                         {resource.description}
                       </span>
                     </Link>
