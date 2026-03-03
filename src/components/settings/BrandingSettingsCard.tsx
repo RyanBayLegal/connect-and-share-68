@@ -40,16 +40,26 @@ export function BrandingSettingsCard() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      const payload = {
+        company_name: companyName,
+        company_slogan: companySlogan,
+        logo_url: logoUrl,
+      };
+
       if (brandingId) {
         const { error } = await supabase
           .from("branding_settings")
-          .update({
-            company_name: companyName,
-            company_slogan: companySlogan,
-            logo_url: logoUrl,
-          })
+          .update(payload)
           .eq("id", brandingId);
         if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("branding_settings")
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        if (data) setBrandingId(data.id);
       }
       toast.success("Branding updated successfully!");
     } catch (error: any) {
