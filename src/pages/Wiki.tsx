@@ -33,6 +33,7 @@ import {
   Info,
   Settings2,
   Paperclip,
+  Archive,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
@@ -211,6 +212,22 @@ export default function Wiki() {
   const handleHistoryClick = (article: WikiArticle) => {
     setEditingArticle(article);
     setIsHistoryOpen(true);
+  };
+
+  const handleArchiveArticle = async (article: WikiArticle) => {
+    if (!confirm("Are you sure you want to archive this article? It will no longer be visible to users.")) return;
+    try {
+      const { error } = await supabase
+        .from("wiki_articles")
+        .update({ is_published: false })
+        .eq("id", article.id);
+      if (error) throw error;
+      toast.success("Article archived");
+      setSelectedArticle(null);
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to archive article");
+    }
   };
 
   const handleExportPdf = async () => {
@@ -550,6 +567,15 @@ export default function Wiki() {
                       >
                         <History className="h-3 w-3 mr-1" />
                         Version History
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleArchiveArticle(selectedArticle)}
+                      >
+                        <Archive className="h-3 w-3 mr-1" />
+                        Archive
                       </Button>
                     </>
                   )}
