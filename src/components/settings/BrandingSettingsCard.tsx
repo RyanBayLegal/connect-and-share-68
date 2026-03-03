@@ -9,9 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Camera, Save, Building2, Phone, Mail, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { useInvalidateBranding } from "@/hooks/useBranding";
 
 export function BrandingSettingsCard() {
   const { user } = useAuth();
+  const invalidateBranding = useInvalidateBranding();
   const [companyName, setCompanyName] = useState("");
   const [companySlogan, setCompanySlogan] = useState("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -72,6 +74,7 @@ export function BrandingSettingsCard() {
         if (error) throw error;
         if (data) setBrandingId(data.id);
       }
+      invalidateBranding();
       toast.success("Branding updated successfully!");
     } catch (error: any) {
       toast.error(error.message || "Failed to update branding");

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-interface BrandingSettings {
+export interface BrandingSettings {
   id: string;
   company_name: string;
   company_slogan: string;
@@ -21,39 +21,41 @@ const defaultBranding: BrandingSettings = {
   contact_address: "1735 Telegraph Ave\nOakland, CA 94612",
 };
 
+const BRANDING_QUERY_KEY = ["branding-settings"];
+
+async function fetchBrandingSettings(): Promise<BrandingSettings> {
+  const { data, error } = await supabase
+    .from("branding_settings")
+    .select("*")
+    .limit(1)
+    .maybeSingle();
+
+  if (data && !error) {
+    return {
+      id: data.id,
+      company_name: data.company_name,
+      company_slogan: data.company_slogan,
+      logo_url: data.logo_url,
+      contact_phone: (data as any).contact_phone || defaultBranding.contact_phone,
+      contact_email: (data as any).contact_email || defaultBranding.contact_email,
+      contact_address: (data as any).contact_address || defaultBranding.contact_address,
+    };
+  }
+
+  return defaultBranding;
+}
+
 export function useBranding() {
-  const [branding, setBranding] = useState<BrandingSettings>(defaultBranding);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: branding = defaultBranding, isLoading } = useQuery({
+    queryKey: BRANDING_QUERY_KEY,
+    queryFn: fetchBrandingSettings,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  useEffect(() => {
-    fetchBranding();
-  }, []);
+  return { branding, isLoading };
+}
 
-  const fetchBranding = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("branding_settings")
-        .select("*")
-        .limit(1)
-        .maybeSingle();
-
-      if (data && !error) {
-        setBranding({
-          id: data.id,
-          company_name: data.company_name,
-          company_slogan: data.company_slogan,
-          logo_url: data.logo_url,
-          contact_phone: (data as any).contact_phone || defaultBranding.contact_phone,
-          contact_email: (data as any).contact_email || defaultBranding.contact_email,
-          contact_address: (data as any).contact_address || defaultBranding.contact_address,
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching branding:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return { branding, isLoading, refetch: fetchBranding };
+export function useInvalidateBranding() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: BRANDING_QUERY_KEY });
 }
