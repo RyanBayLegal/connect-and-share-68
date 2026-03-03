@@ -3,7 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Megaphone, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -14,13 +13,13 @@ import { BirthdaysAnniversariesWidget } from "@/components/dashboard/BirthdaysAn
 import { GoogleReviewsWidget } from "@/components/dashboard/GoogleReviewsWidget";
 import { TrainingQuickActionsWidget } from "@/components/dashboard/TrainingQuickActionsWidget";
 
-import { useBranding } from "@/hooks/useBranding";
+
 
 export default function Dashboard() {
   const { profile, user } = useAuth();
   const [recentAnnouncements, setRecentAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { branding } = useBranding();
+  
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -67,40 +66,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
-      <section>
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
-          <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent z-10" />
-            <img
-              src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=2000"
-              alt="Office Background"
-              className="w-full h-full object-cover opacity-60"
-            />
-          </div>
-          <div className="relative z-20 flex flex-col items-center justify-center py-20 px-6 text-center">
-            <Badge variant="secondary" className="mb-6 bg-sky-500/20 text-sky-400 border-sky-500/30 px-4 py-1 rounded-full uppercase tracking-widest text-[10px] font-bold">
-              • CORPORATE PORTAL
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
-              {branding.company_name} Hub
-            </h1>
-            <p className="max-w-2xl text-zinc-300 text-lg md:text-xl leading-relaxed mb-10">
-              {branding.company_slogan}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <Button asChild size="lg" className="bg-sky-500 hover:bg-sky-400 text-white font-bold px-8 shadow-[0_0_20px_rgba(14,165,233,0.4)] transition-all hover:scale-105">
-                <Link to="/wiki">Explore Resources</Link>
-              </Button>
-              <Button asChild size="lg" variant="secondary" className="bg-zinc-900/80 hover:bg-zinc-800 text-zinc-100 font-bold px-8 border border-white/10 transition-all hover:scale-105">
-                <Link to="/wiki">Quick Wiki Access</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Content: Announcements center, sidebars */}
       {/* Row 1: Birthdays | Announcements | Google Reviews */}
       <section>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
