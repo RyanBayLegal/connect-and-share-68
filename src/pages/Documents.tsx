@@ -171,7 +171,7 @@ export default function Documents() {
       const { error } = await supabase.from("document_folders").insert({
         name: newFolderName,
         parent_id: currentFolderId,
-        department_id: newFolderDepartment || null,
+        department_id: newFolderDepartment && newFolderDepartment !== "all" ? newFolderDepartment : null,
         created_by: profile.id,
         is_public: newFolderPublic,
       });
@@ -312,7 +312,7 @@ export default function Documents() {
                         <SelectValue placeholder="All departments" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Departments</SelectItem>
+                        <SelectItem value="all">All Departments</SelectItem>
                         {departments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}

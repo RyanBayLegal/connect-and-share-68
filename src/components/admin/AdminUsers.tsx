@@ -135,7 +135,7 @@ export function AdminUsers() {
       // Update department
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ department_id: editDepartment || null })
+        .update({ department_id: editDepartment === "none" ? null : editDepartment || null })
         .eq("id", editingUser.id);
 
       if (profileError) throw profileError;
@@ -376,7 +376,7 @@ export function AdminUsers() {
                 <Select value={editDepartment} onValueChange={setEditDepartment}>
                   <SelectTrigger><SelectValue placeholder="No department" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {departments.map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}

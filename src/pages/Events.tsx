@@ -133,7 +133,7 @@ export default function Events() {
         start_date: startDateTime,
         end_date: endDateTime,
         is_all_day: newIsAllDay,
-        department_id: newDepartment || null,
+        department_id: newDepartment && newDepartment !== "all" ? newDepartment : null,
         created_by: profile.id,
       });
 
@@ -238,7 +238,7 @@ export default function Events() {
                         <SelectValue placeholder="All" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Departments</SelectItem>
+                        <SelectItem value="all">All Departments</SelectItem>
                         {departments.map((d) => (
                           <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                         ))}
