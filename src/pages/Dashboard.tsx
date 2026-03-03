@@ -5,11 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Users, 
-  Megaphone, 
-  FileText, 
-  MessageSquare, 
+import {
+  Users,
+  Megaphone,
+  FileText,
+  MessageSquare,
   ArrowRight,
   Bell,
   Clock,
@@ -125,181 +125,122 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex flex-col">
-      {/* Hero Section with Diamond Pattern */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 diamond-pattern opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="container relative z-10 py-16 md:py-24 text-center">
-          <h1 className="text-3xl md:text-5xl font-light tracking-wide neon-text">
-            {COMPANY_NAME} Hub
-          </h1>
-          <p className="mt-4 text-muted-foreground text-lg">
-            {COMPANY_TAGLINE}
-          </p>
-        </div>
-      </section>
-
-      {/* Welcome Banner */}
-      <section className="glass-panel border-y border-primary/20 py-4">
-        <div className="container text-center">
-          <p className="text-sm md:text-base text-foreground/80">
-            Welcome{profile?.first_name ? `, ${profile.first_name}` : ""} to the Bay Legal Knowledge Hub — your go-to place for policies, forms, and helpful resources designed to support you every day.
-          </p>
-        </div>
-      </section>
-
-      {/* Birthdays & Anniversaries Widget */}
-      <section className="container pt-8">
-        <BirthdaysAnniversariesWidget />
-      </section>
-
-      {/* HR Quick Actions - only visible to HR managers */}
-      <section className="container pt-4">
-        <HRQuickActionsWidget />
-      </section>
-
-      {/* Training Quick Actions - only visible to training managers */}
-      <section className="container pt-4">
-        <TrainingQuickActionsWidget />
-      </section>
-
-      {/* Resources - Full Width */}
+    <>
+      {/* Hero Section - Matching Reference */}
       <section className="container py-8">
-        <Card className="glass-card neon-border">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-2xl font-light text-center neon-text">
-                  YOUR RESOURCES
-                </CardTitle>
-                <div className="w-24 h-0.5 bg-primary/40 mx-auto rounded-full neon-glow-sm" />
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                  {resourceCards.map((resource) => (
-                    <Link
-                      key={resource.href}
-                      to={resource.href}
-                      className="group flex flex-col items-center text-center p-4 rounded-xl transition-all duration-300 hover:bg-primary/5 hover:-translate-y-2 focus-ring"
-                    >
-                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full glass-panel flex items-center justify-center mb-3 transition-all duration-300 group-hover:neon-glow-md group-hover:scale-110 group-hover:border-primary/40">
-                        <resource.icon className="h-8 w-8 md:h-10 md:w-10 text-primary transition-transform duration-300 group-hover:scale-110" />
-                      </div>
-                      <span className="text-primary font-medium text-xs md:text-sm tracking-wide transition-colors group-hover:text-foreground">
-                        {resource.title}
-                      </span>
-                      <span className="text-muted-foreground text-xs mt-1 hidden md:block transition-colors group-hover:text-foreground/70">
-                        {resource.description}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-      </section>
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
+          {/* Background Image with Overlay */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent z-10" />
+            <img
+              src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=2000"
+              alt="Office Background"
+              className="w-full h-full object-cover opacity-60"
+            />
+          </div>
 
-      {/* ChatGPT + Google Reviews Row */}
-      <section className="container pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <ChatGPTWidget />
-          <GoogleReviewsWidget />
+          <div className="relative z-20 flex flex-col items-center justify-center py-20 px-6 text-center">
+            <Badge variant="secondary" className="mb-6 bg-sky-500/20 text-sky-400 border-sky-500/30 px-4 py-1 rounded-full uppercase tracking-widest text-[10px] font-bold">
+              • CORPORATE PORTAL
+            </Badge>
+            <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
+              Bay Legal, PC Hub
+            </h1>
+            <p className="max-w-2xl text-zinc-300 text-lg md:text-xl leading-relaxed mb-10">
+              Your unified knowledge base for policies, high-performance resources, and professional support.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <Button size="lg" className="bg-sky-500 hover:bg-sky-400 text-white font-bold px-8 shadow-[0_0_20px_rgba(14,165,233,0.4)] transition-all hover:scale-105">
+                Explore Resources
+              </Button>
+              <Button size="lg" variant="secondary" className="bg-zinc-900/80 hover:bg-zinc-800 text-zinc-100 font-bold px-8 border border-white/10 transition-all hover:scale-105">
+                Quick Wiki Access
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Manager Progress Widget */}
-      <section className="container pb-8">
-        <ManagerProgressWidget />
-      </section>
-
-      {/* Recent Announcements */}
+      {/* Main Content Grid */}
       <section className="container pb-12">
-        <Card className="card-interactive">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary icon-pulse" />
-                Recent Announcements
-              </CardTitle>
-              <CardDescription>
-                Stay updated with the latest company news
-              </CardDescription>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+          {/* Left: Your Resources Grid (2/3 width) */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded-md bg-sky-500/10 text-sky-500">
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-1.5 h-1.5 bg-current rounded-[1px]" />
+                  <div className="w-1.5 h-1.5 bg-current rounded-[1px]" />
+                  <div className="w-1.5 h-1.5 bg-current rounded-[1px]" />
+                  <div className="w-1.5 h-1.5 bg-current rounded-[1px]" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight text-white uppercase">Your Resources</h2>
             </div>
-            <Button variant="outline" size="sm" asChild className="btn-shine group">
-              <Link to="/announcements">
-                View All <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {recentAnnouncements.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                No announcements yet
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {recentAnnouncements.map((announcement) => (
-                  <div
-                    key={announcement.id}
-                    className="flex items-start gap-4 p-4 rounded-lg border bg-card transition-all duration-300 hover:bg-muted/50 hover:border-primary/30 hover:shadow-md hover:-translate-x-1 cursor-pointer"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={announcement.author?.avatar_url || undefined} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {announcement.author
-                          ? `${announcement.author.first_name[0]}${announcement.author.last_name[0]}`
-                          : "A"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-semibold truncate">
-                          {announcement.title}
-                        </h4>
-                        <Badge
-                          variant={
-                            announcement.priority === "critical"
-                              ? "destructive"
-                              : announcement.priority === "important"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {PRIORITIES[announcement.priority].label}
-                        </Badge>
-                        {announcement.category && (
-                          <Badge
-                            variant="outline"
-                            style={{
-                              borderColor: announcement.category.color,
-                              color: announcement.category.color,
-                            }}
-                          >
-                            {announcement.category.name}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {announcement.content}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {announcement.published_at &&
-                          formatDistanceToNow(new Date(announcement.published_at), {
-                            addSuffix: true,
-                          })}
-                        <span>•</span>
-                        <span>
-                          {announcement.author?.first_name}{" "}
-                          {announcement.author?.last_name}
-                        </span>
-                      </div>
-                    </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {resourceCards.map((resource) => (
+                <Link
+                  key={resource.href}
+                  to={resource.href}
+                  className="group relative flex flex-col items-center justify-center aspect-square p-6 rounded-2xl bg-zinc-900/40 border border-white/5 transition-all duration-300 hover:bg-zinc-800/60 hover:border-sky-500/30 hover:-translate-y-1 focus-ring"
+                >
+                  <div className="mb-4 p-3 rounded-xl bg-sky-500/10 text-sky-400 transition-all group-hover:scale-110 group-hover:bg-sky-500 group-hover:text-white shadow-inner">
+                    <resource.icon className="h-6 w-6" />
+                  </div>
+                  <span className="text-sm font-bold tracking-wide text-zinc-400 transition-colors group-hover:text-white uppercase text-center">
+                    {resource.title}
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            {/* AI Powered Section */}
+            <div className="pt-8">
+              <ChatGPTWidget />
+            </div>
+
+            <div className="pt-4">
+              <GoogleReviewsWidget />
+            </div>
+          </div>
+
+          {/* Right: Sidebar (1/3 width) */}
+          <div className="space-y-6">
+            <BirthdaysAnniversariesWidget />
+
+            <Card className="bg-zinc-900/40 border-white/5 overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-b from-white/[0.02] to-transparent">
+                <div className="flex items-center gap-2">
+                  <Megaphone className="h-4 w-4 text-sky-500" />
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider">Announcements</CardTitle>
+                </div>
+                <Link to="/announcements" className="text-[10px] font-bold text-sky-500 hover:text-sky-400 uppercase tracking-tighter">View All</Link>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-4">
+                {recentAnnouncements.slice(0, 3).map((announcement) => (
+                  <div key={announcement.id} className="group cursor-pointer">
+                    <Badge variant="outline" className="mb-2 text-[9px] uppercase border-sky-500/30 text-sky-400 px-2 py-0">
+                      {announcement.category?.name || "News"}
+                    </Badge>
+                    <h4 className="font-bold text-sm text-zinc-100 line-clamp-2 leading-snug group-hover:text-sky-400 transition-colors">
+                      {announcement.title}
+                    </h4>
+                    <p className="text-xs text-zinc-500 line-clamp-2 mt-1 leading-relaxed">
+                      {announcement.content}
+                    </p>
                   </div>
                 ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+
+            <ManagerProgressWidget />
+            <HRQuickActionsWidget />
+            <TrainingQuickActionsWidget />
+          </div>
+        </div>
       </section>
-    </div>
+    </>
   );
 }

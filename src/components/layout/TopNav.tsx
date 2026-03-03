@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  Home, 
-  Users, 
-  Megaphone, 
-  FileText, 
-  MessageSquare, 
+import {
+  Home,
+  Users,
+  Megaphone,
+  FileText,
+  MessageSquare,
   Settings,
   Shield,
   LogOut,
@@ -15,6 +15,7 @@ import {
   BookOpen,
   CalendarDays,
   Menu,
+  Bell,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -73,183 +74,81 @@ export function TopNav() {
   const isActive = (url: string) => location.pathname === url;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 glass-card" style={{ borderRadius: 0 }}>
-      <div className="container flex h-16 items-center justify-between px-4">
-        {/* Logo */}
-        <NavLink to="/" className="flex items-center gap-3">
-          <img 
-            src={bayLegalLogo} 
-            alt="Bay Legal" 
-            className="h-10 w-auto"
-          />
-          <div className="hidden sm:block">
-            <span className="text-lg font-semibold text-foreground">Bay Legal</span>
-            <span className="text-xs text-muted-foreground block">A Professional Corporation</span>
+    <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-black/80 backdrop-blur-md">
+      <div className="container flex h-20 items-center justify-between px-6">
+        {/* Logo & Brand */}
+        <NavLink to="/" className="flex items-center gap-3 group">
+          <div className="bg-sky-500 p-2 rounded-lg shadow-[0_0_15px_rgba(14,165,233,0.3)] group-hover:scale-110 transition-transform">
+            <Shield className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xl font-black text-white tracking-tighter leading-none">BAY LEGAL</span>
+            <span className="text-[10px] font-bold text-sky-500 uppercase tracking-[0.2em] leading-none mt-1">Professional Corp</span>
           </div>
         </NavLink>
 
         {/* Desktop Navigation */}
-        <NavigationMenu className="hidden lg:flex">
-          <NavigationMenuList>
-            <NavigationMenuItem>
-              <NavLink 
-                to="/" 
-                className={cn(
-                  "group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none",
-                  isActive("/") && "bg-accent/50 text-primary"
-                )}
-              >
-                Home
-              </NavLink>
-            </NavigationMenuItem>
+        <nav className="hidden lg:flex items-center gap-8">
+          {["Directory", "Wiki", "Tasks", "Support"].map((item) => (
+            <NavLink
+              key={item}
+              to={`/${item.toLowerCase()}`}
+              className={({ isActive }) => cn(
+                "text-sm font-bold uppercase tracking-widest transition-colors hover:text-sky-400",
+                isActive ? "text-sky-500" : "text-zinc-400"
+              )}
+            >
+              {item}
+            </NavLink>
+          ))}
+        </nav>
 
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>About</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[300px] gap-3 p-4">
-                  <li>
-                    <NavigationMenuLink asChild>
-                      <NavLink
-                        to="/directory"
-                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                      >
-                        <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                          <Users className="h-4 w-4" />
-                          Employee Directory
-                        </div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                          Find and connect with team members
-                        </p>
-                      </NavLink>
-                    </NavigationMenuLink>
-                  </li>
-                  <li>
-                    <NavigationMenuLink asChild>
-                      <NavLink
-                        to="/announcements"
-                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                      >
-                        <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                          <Megaphone className="h-4 w-4" />
-                          Announcements
-                        </div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                          Latest company news and updates
-                        </p>
-                      </NavLink>
-                    </NavigationMenuLink>
-                  </li>
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
+        {/* Right Actions */}
+        <div className="flex items-center gap-6">
+          <div className="hidden md:block w-64">
+            <GlobalSearch />
+          </div>
 
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Library</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[300px] gap-3 p-4">
-                  {libraryItems.map((item) => (
-                    <li key={item.url}>
-                      <NavigationMenuLink asChild>
-                        <NavLink
-                          to={item.url}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                            <item.icon className="h-4 w-4" />
-                            {item.title}
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            {item.description}
-                          </p>
-                        </NavLink>
-                      </NavigationMenuLink>
-                    </li>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
+          <Button variant="ghost" size="icon" className="relative text-zinc-400 hover:text-white">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-sky-500 rounded-full border-2 border-black" />
+          </Button>
 
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[300px] gap-3 p-4">
-                  {resourceItems.map((item) => (
-                    <li key={item.url}>
-                      <NavigationMenuLink asChild>
-                        <NavLink
-                          to={item.url}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                            <item.icon className="h-4 w-4" />
-                            {item.title}
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            {item.description}
-                          </p>
-                        </NavLink>
-                      </NavigationMenuLink>
-                    </li>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-
-            {isAdmin() && (
-              <NavigationMenuItem>
-                <NavLink 
-                  to="/admin" 
-                  className={cn(
-                    "group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none",
-                    isActive("/admin") && "bg-accent/50 text-primary"
-                  )}
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Admin
-                </NavLink>
-              </NavigationMenuItem>
-            )}
-          </NavigationMenuList>
-        </NavigationMenu>
-
-        {/* Right side actions */}
-        <div className="flex items-center gap-2">
-          <TimeTrackingHeaderWidget />
-          <GlobalSearch />
-
-          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 rounded-full p-1 hover:bg-accent transition-colors">
-                <Avatar className="h-8 w-8">
+              <button className="flex items-center gap-3 group">
+                <Avatar className="h-10 w-10 border-2 border-white/10 group-hover:border-sky-500 transition-colors">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                  <AvatarFallback className="bg-zinc-800 text-zinc-100 font-bold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <ChevronDown className="h-4 w-4 text-muted-foreground hidden sm:block" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-2 py-1.5">
-                <p className="text-sm font-medium">
-                  {profile?.first_name} {profile?.last_name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {profile?.email}
-                </p>
+            <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/10 text-white">
+              <div className="px-2 py-2">
+                <p className="text-sm font-bold">{profile?.first_name} {profile?.last_name}</p>
+                <p className="text-xs text-zinc-500">{profile?.email}</p>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <NavLink to="/settings" className="flex items-center gap-2">
+              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuItem asChild className="focus:bg-sky-500/10 focus:text-sky-400">
+                <NavLink to="/settings" className="flex items-center gap-2 w-full">
                   <Settings className="h-4 w-4" />
                   Settings
                 </NavLink>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              {isAdmin() && (
+                <DropdownMenuItem asChild className="focus:bg-sky-500/10 focus:text-sky-400">
+                  <NavLink to="/admin" className="flex items-center gap-2 w-full">
+                    <Shield className="h-4 w-4" />
+                    Admin Panel
+                  </NavLink>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuItem
                 onClick={signOut}
-                className="text-destructive focus:text-destructive"
+                className="text-red-400 focus:bg-red-500/10 focus:text-red-400"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
@@ -257,42 +156,25 @@ export function TopNav() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Mobile Menu */}
+          {/* Mobile Toggle */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden">
-                <Menu className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="lg:hidden text-zinc-400">
+                <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[350px]">
-              <div className="flex flex-col gap-4 mt-6">
-                {mainNavItems.map((item) => (
+            <SheetContent side="right" className="bg-black border-white/5 text-white">
+              <div className="flex flex-col gap-6 mt-12">
+                {["Home", "Directory", "Wiki", "Tasks", "Support"].map((item) => (
                   <NavLink
-                    key={item.url}
-                    to={item.url}
+                    key={item}
+                    to={item === "Home" ? "/" : `/${item.toLowerCase()}`}
                     onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent",
-                      isActive(item.url) && "bg-accent text-primary"
-                    )}
+                    className="text-lg font-bold uppercase tracking-widest hover:text-sky-500 transition-colors"
                   >
-                    <item.icon className="h-5 w-5" />
-                    {item.title}
+                    {item}
                   </NavLink>
                 ))}
-                {isAdmin() && (
-                  <NavLink
-                    to="/admin"
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent",
-                      isActive("/admin") && "bg-accent text-primary"
-                    )}
-                  >
-                    <Shield className="h-5 w-5" />
-                    Admin Panel
-                  </NavLink>
-                )}
               </div>
             </SheetContent>
           </Sheet>
