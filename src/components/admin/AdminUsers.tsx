@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Pencil } from "lucide-react";
+import { Plus, Search, Pencil, Power } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ROLE_LABELS } from "@/lib/constants";
 import type { Profile, Department, AppRole } from "@/types/database";
@@ -27,6 +28,11 @@ export function AdminUsers() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<(Profile & { roles: AppRole[] }) | null>(null);
   const [editRoles, setEditRoles] = useState<AppRole[]>([]);
+
+  // Status toggle state
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [statusToggleUser, setStatusToggleUser] = useState<(Profile & { roles: AppRole[] }) | null>(null);
+  const [offboardedDate, setOffboardedDate] = useState("");
 
   // New user form
   const [newEmail, setNewEmail] = useState("");
@@ -155,6 +161,46 @@ export function AdminUsers() {
     }
   };
 
+  const handleStatusToggle = (user: Profile & { roles: AppRole[] }) => {
+    setStatusToggleUser(user);
+    if (user.is_active) {
+      // Deactivating — ask for offboarded date
+      setOffboardedDate(new Date().toISOString().split("T")[0]);
+      setIsStatusDialogOpen(true);
+    } else {
+      // Reactivating — do it immediately
+      updateUserStatus(user, true, null);
+    }
+  };
+
+  const confirmDeactivate = () => {
+    if (!statusToggleUser) return;
+    updateUserStatus(statusToggleUser, false, offboardedDate || null);
+    setIsStatusDialogOpen(false);
+  };
+
+  const updateUserStatus = async (user: Profile & { roles: AppRole[] }, isActive: boolean, offboardDate: string | null) => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          is_active: isActive,
+          offboarded_at: isActive ? null : offboardDate,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+      toast.success(`${user.first_name} ${user.last_name} has been ${isActive ? "reactivated" : "deactivated"}.`);
+      fetchData();
+    } catch (error: any) {
+      console.error("Error updating user status:", error);
+      toast.error(error.message || "Failed to update user status");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const filteredUsers = users.filter(
     (u) =>
       `${u.first_name} ${u.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -259,9 +305,22 @@ export function AdminUsers() {
                   ))}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={user.is_active ? "default" : "destructive"}>
-                    {user.is_active ? "Active" : "Inactive"}
-                  </Badge>
+                  {isSuperAdmin() ? (
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={user.is_active}
+                        onCheckedChange={() => handleStatusToggle(user)}
+                        disabled={isSubmitting}
+                      />
+                      <span className={`text-sm ${user.is_active ? "text-foreground" : "text-destructive"}`}>
+                        {user.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                  ) : (
+                    <Badge variant={user.is_active ? "default" : "destructive"}>
+                      {user.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  )}
                 </TableCell>
                 {isSuperAdmin() && (
                   <TableCell>
@@ -321,6 +380,34 @@ export function AdminUsers() {
                 <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
                 <Button onClick={handleUpdateRoles} disabled={isSubmitting}>
                   {isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* Deactivate User Dialog */}
+        <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Deactivate {statusToggleUser?.first_name} {statusToggleUser?.last_name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                This will mark the user as inactive. Please provide the offboarding date.
+              </p>
+              <div className="space-y-2">
+                <Label>Offboarded Date</Label>
+                <Input
+                  type="date"
+                  value={offboardedDate}
+                  onChange={(e) => setOffboardedDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={confirmDeactivate} disabled={isSubmitting || !offboardedDate}>
+                  {isSubmitting ? "Deactivating..." : "Deactivate User"}
                 </Button>
               </div>
             </div>
