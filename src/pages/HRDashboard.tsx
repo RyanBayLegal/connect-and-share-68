@@ -69,6 +69,23 @@ export default function HRDashboard() {
     }
   }, [rolesLoaded]);
 
+  // Realtime subscriptions for live updates
+  useEffect(() => {
+    if (!rolesLoaded || !isHRManager()) return;
+
+    const channel = supabase
+      .channel('hr-dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'time_entries' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'time_off_requests' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'timesheets' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [rolesLoaded]);
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
