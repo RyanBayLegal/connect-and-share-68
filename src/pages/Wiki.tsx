@@ -77,7 +77,7 @@ export default function Wiki() {
         supabase.from("wiki_categories").select("*").order("position"),
         supabase
           .from("wiki_articles")
-          .select("*, category:wiki_categories(*), author:profiles(*)")
+          .select("*, category:wiki_categories(*), author:profiles!wiki_articles_author_id_fkey(*)")
           .eq("is_published", true)
           .order("is_featured", { ascending: false })
           .order("updated_at", { ascending: false }),
