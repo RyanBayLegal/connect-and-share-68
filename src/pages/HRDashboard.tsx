@@ -20,9 +20,14 @@ import {
   ClipboardList,
   Settings,
   Search,
-  LayoutDashboard
+  LayoutDashboard,
+  Calendar,
+  TreePalm,
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 import type { Profile, TimeEntry, Timesheet, PayrollRun, TimeTrackingStatus } from "@/types/database";
 
 interface EmployeeStatus {
@@ -31,16 +36,31 @@ interface EmployeeStatus {
   status: TimeTrackingStatus | null;
 }
 
+interface TimeOffRequest {
+  id: string;
+  employee_id: string;
+  request_type: string;
+  start_date: string;
+  end_date: string;
+  hours_requested: number;
+  reason: string | null;
+  status: string;
+  created_at: string;
+  employee?: Profile;
+}
+
 export default function HRDashboard() {
   const { isHRManager, rolesLoaded } = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [employeeStatuses, setEmployeeStatuses] = useState<EmployeeStatus[]>([]);
   const [pendingTimesheets, setPendingTimesheets] = useState<(Timesheet & { employee?: Profile })[]>([]);
   const [pendingPayrollRuns, setPendingPayrollRuns] = useState<PayrollRun[]>([]);
+  const [pendingLeaveRequests, setPendingLeaveRequests] = useState<TimeOffRequest[]>([]);
+  const [leaveStats, setLeaveStats] = useState({ pending: 0, approved: 0, denied: 0 });
   const [statuses, setStatuses] = useState<TimeTrackingStatus[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Stats
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [clockedInCount, setClockedInCount] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState(0);
@@ -74,7 +94,6 @@ export default function HRDashboard() {
       if (employees) {
         setTotalEmployees(employees.length);
 
-        // Fetch current time entries for all employees
         const { data: currentEntries } = await supabase
           .from("time_entries")
           .select("*")
@@ -126,6 +145,43 @@ export default function HRDashboard() {
       if (payrollRuns) {
         setPendingPayrollRuns(payrollRuns as PayrollRun[]);
       }
+
+      // Fetch pending leave/time-off requests
+      const { data: leaveRequests } = await supabase
+        .from("time_off_requests")
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (leaveRequests) {
+        // Fetch employee profiles for leave requests
+        const leaveEmpIds = [...new Set(leaveRequests.map((r) => r.employee_id))];
+        const { data: leaveEmpData } = leaveEmpIds.length > 0
+          ? await supabase.from("profiles").select("*").in("id", leaveEmpIds)
+          : { data: [] };
+
+        const requestsWithEmployees = leaveRequests.map((req) => ({
+          ...req,
+          employee: (leaveEmpData as unknown as Profile[])?.find((e) => e.id === req.employee_id),
+        })) as TimeOffRequest[];
+        setPendingLeaveRequests(requestsWithEmployees);
+      }
+
+      // Fetch leave stats (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const { data: recentLeaves } = await supabase
+        .from("time_off_requests")
+        .select("status")
+        .gte("created_at", thirtyDaysAgo.toISOString());
+
+      if (recentLeaves) {
+        setLeaveStats({
+          pending: recentLeaves.filter((r) => r.status === "pending").length,
+          approved: recentLeaves.filter((r) => r.status === "approved").length,
+          denied: recentLeaves.filter((r) => r.status === "denied").length,
+        });
+      }
     } catch (error) {
       console.error("Error fetching HR dashboard data:", error);
     } finally {
@@ -133,14 +189,49 @@ export default function HRDashboard() {
     }
   };
 
-  const getStatusById = (id: string | null) => statuses.find((s) => s.id === id);
+  const handleLeaveAction = async (requestId: string, action: "approved" | "denied") => {
+    try {
+      const { error } = await supabase
+        .from("time_off_requests")
+        .update({ 
+          status: action, 
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", requestId);
+
+      if (error) throw error;
+
+      toast({
+        title: action === "approved" ? "Request Approved" : "Request Denied",
+        description: `The time-off request has been ${action}.`,
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Error updating leave request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update the request.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getRequestTypeName = (type: string) => {
+    const types: Record<string, string> = {
+      pto: "PTO",
+      sick: "Sick Leave",
+      personal: "Personal Day",
+      bereavement: "Bereavement",
+      unpaid: "Unpaid Leave",
+    };
+    return types[type] || type;
+  };
 
   const filteredEmployees = employeeStatuses.filter((es) => {
     const name = `${es.employee.first_name} ${es.employee.last_name}`.toLowerCase();
     return name.includes(searchQuery.toLowerCase());
   });
 
-  // Wait for roles to load before checking access
   if (!rolesLoaded) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -178,13 +269,13 @@ export default function HRDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">HR Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            Consolidated view of time tracking, payroll, and employee management
+            Consolidated view of time tracking, payroll, leaves, and employee management
           </p>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -221,6 +312,18 @@ export default function HRDashboard() {
           </CardContent>
         </Card>
 
+        <Card className="border-purple-200 dark:border-purple-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <TreePalm className="h-4 w-4 text-purple-600" />
+              Pending Leave
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">{leaveStats.pending}</div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -235,7 +338,7 @@ export default function HRDashboard() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
           <Link to="/time-management">
             <Clock className="h-5 w-5" />
@@ -255,6 +358,12 @@ export default function HRDashboard() {
           </Link>
         </Button>
         <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+          <Link to="/directory">
+            <Users className="h-5 w-5" />
+            <span>Employee Records</span>
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
           <Link to="/hr-settings">
             <Settings className="h-5 w-5" />
             <span>HR Settings</span>
@@ -262,6 +371,7 @@ export default function HRDashboard() {
         </Button>
       </div>
 
+      {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Live Employee Status */}
         <Card>
@@ -336,7 +446,87 @@ export default function HRDashboard() {
           </CardContent>
         </Card>
 
-        {/* Pending Actions */}
+        {/* Pending Leave Requests */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Pending Leave Requests
+            </CardTitle>
+            <CardDescription>
+              {pendingLeaveRequests.length} request{pendingLeaveRequests.length !== 1 ? "s" : ""} awaiting review
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {pendingLeaveRequests.length > 0 ? (
+                <>
+                  {pendingLeaveRequests.slice(0, 8).map((req) => (
+                    <div
+                      key={req.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={req.employee?.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {req.employee?.first_name?.[0] || "?"}
+                            {req.employee?.last_name?.[0] || ""}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">
+                            {req.employee?.first_name} {req.employee?.last_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {getRequestTypeName(req.request_type)} · {format(new Date(req.start_date), "MMM d")} - {format(new Date(req.end_date), "MMM d")}
+                          </p>
+                          {req.reason && (
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">
+                              {req.reason}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100"
+                          onClick={() => handleLeaveAction(req.id, "approved")}
+                        >
+                          <ThumbsUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                          onClick={() => handleLeaveAction(req.id, "denied")}
+                        >
+                          <ThumbsDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {pendingLeaveRequests.length > 8 && (
+                    <Button asChild variant="ghost" className="w-full">
+                      <Link to="/time-management">
+                        View all {pendingLeaveRequests.length} requests
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Link>
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  No pending leave requests
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending Actions (Timesheets + Payroll) */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -421,6 +611,38 @@ export default function HRDashboard() {
                 )}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Leave Stats (Last 30 Days) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TreePalm className="h-5 w-5" />
+              Leave Overview (Last 30 Days)
+            </CardTitle>
+            <CardDescription>Summary of recent time-off requests</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="text-center p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30">
+                <p className="text-2xl font-bold text-orange-600">{leaveStats.pending}</p>
+                <p className="text-xs text-muted-foreground">Pending</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
+                <p className="text-2xl font-bold text-green-600">{leaveStats.approved}</p>
+                <p className="text-xs text-muted-foreground">Approved</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-950/30">
+                <p className="text-2xl font-bold text-destructive">{leaveStats.denied}</p>
+                <p className="text-xs text-muted-foreground">Denied</p>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm" className="w-full">
+              <Link to="/time-management">
+                View All Leave Requests <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
