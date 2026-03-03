@@ -101,19 +101,15 @@ export default function Dashboard() {
       </section>
 
       {/* Main Content: Announcements center, sidebars */}
+      {/* Row 1: Birthdays | Announcements | Google Reviews */}
       <section>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left: Celebrations + Manager Progress */}
-          <div className="lg:col-span-3 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-3">
             <BirthdaysAnniversariesWidget />
-            <LeaveRequestWidget />
-            <ManagerProgressWidget />
-            <TrainingQuickActionsWidget />
           </div>
 
-          {/* Center: Announcements (prominent) */}
           <div className="lg:col-span-6">
-            <Card className="bg-zinc-900/40 border-white/5 overflow-hidden">
+            <Card className="bg-zinc-900/40 border-white/5 overflow-hidden h-full">
               <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-b from-white/[0.02] to-transparent">
                 <div className="flex items-center gap-2">
                   <Megaphone className="h-5 w-5 text-sky-500" />
@@ -175,10 +171,18 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Right: Google Reviews */}
           <div className="lg:col-span-3">
             <GoogleReviewsWidget />
           </div>
+        </div>
+      </section>
+
+      {/* Row 2: Leave Request | Manager Progress | Training */}
+      <section>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <LeaveRequestWidget />
+          <ManagerProgressWidget />
+          <TrainingQuickActionsWidget />
         </div>
       </section>
     </div>
