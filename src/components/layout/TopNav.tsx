@@ -40,15 +40,15 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useBranding } from "@/hooks/useBranding";
 
 const quickLinks = [
-  { title: "Directory", url: "/directory", icon: Users, description: "Find team members" },
   { title: "Announcements", url: "/announcements", icon: Megaphone, description: "Company news & updates" },
+  { title: "Libraries", url: "/wiki", icon: BookOpen, description: "Knowledge base" },
+  { title: "Training", url: "/training", icon: GraduationCap, description: "Courses & development" },
 ];
 
 const resourceLinks = [
+  { title: "Directory", url: "/directory", icon: Users, description: "Find team members" },
   { title: "Documents", url: "/documents", icon: FileText, description: "Files & resources" },
-  { title: "Libraries", url: "/wiki", icon: BookOpen, description: "Knowledge base" },
   { title: "Tasks", url: "/tasks", icon: ListTodo, description: "Projects & assignments" },
-  { title: "Training", url: "/training", icon: GraduationCap, description: "Courses & development" },
   { title: "Messages", url: "/messages", icon: MessageSquare, description: "Team communication" },
   { title: "Events", url: "/events", icon: CalendarDays, description: "Calendar & meetings" },
 ];
