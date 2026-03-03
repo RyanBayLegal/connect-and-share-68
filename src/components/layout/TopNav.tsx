@@ -18,6 +18,7 @@ import {
   ChevronDown,
   LayoutGrid,
   Briefcase,
+  UserCog,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -52,6 +53,7 @@ const hrLinks = [
 ];
 
 const resourceLinks = [
+  { title: "My HR", url: "/my-hr", icon: UserCog, description: "Pay stubs, leave & PTO" },
   { title: "Directory", url: "/directory", icon: Users, description: "Find team members" },
   { title: "Documents", url: "/documents", icon: FileText, description: "Files & resources" },
   { title: "Tasks", url: "/tasks", icon: ListTodo, description: "Projects & assignments" },
