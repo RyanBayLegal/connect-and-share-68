@@ -6,6 +6,9 @@ interface BrandingSettings {
   company_name: string;
   company_slogan: string;
   logo_url: string | null;
+  contact_phone: string;
+  contact_email: string;
+  contact_address: string;
 }
 
 const defaultBranding: BrandingSettings = {
@@ -13,6 +16,9 @@ const defaultBranding: BrandingSettings = {
   company_name: "Bay Legal, PC",
   company_slogan: "Your Knowledge Base for Policies, Resources, and Support",
   logo_url: null,
+  contact_phone: "(510) 250-5270",
+  contact_email: "info@baylegal.com",
+  contact_address: "1735 Telegraph Ave\nOakland, CA 94612",
 };
 
 export function useBranding() {
@@ -32,7 +38,15 @@ export function useBranding() {
         .maybeSingle();
 
       if (data && !error) {
-        setBranding(data as BrandingSettings);
+        setBranding({
+          id: data.id,
+          company_name: data.company_name,
+          company_slogan: data.company_slogan,
+          logo_url: data.logo_url,
+          contact_phone: (data as any).contact_phone || defaultBranding.contact_phone,
+          contact_email: (data as any).contact_email || defaultBranding.contact_email,
+          contact_address: (data as any).contact_address || defaultBranding.contact_address,
+        });
       }
     } catch (error) {
       console.error("Error fetching branding:", error);
