@@ -10,12 +10,12 @@ import {
   Settings,
   Shield,
   LogOut,
-  ChevronDown,
   ListTodo,
   BookOpen,
   CalendarDays,
   Menu,
   Bell,
+  GraduationCap,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -25,41 +25,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import bayLegalLogo from "@/assets/bay-legal-logo.webp";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
-import { TimeTrackingHeaderWidget } from "@/components/dashboard/TimeTrackingHeaderWidget";
 
-const mainNavItems = [
-  { title: "Home", url: "/", icon: Home },
+const navLinks = [
   { title: "Directory", url: "/directory", icon: Users },
   { title: "Announcements", url: "/announcements", icon: Megaphone },
   { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Messages", url: "/messages", icon: MessageSquare },
-  { title: "Tasks", url: "/tasks", icon: ListTodo },
   { title: "Wiki", url: "/wiki", icon: BookOpen },
+  { title: "Tasks", url: "/tasks", icon: ListTodo },
+  { title: "Training", url: "/training", icon: GraduationCap },
+  { title: "Messages", url: "/messages", icon: MessageSquare },
   { title: "Events", url: "/events", icon: CalendarDays },
-];
-
-const libraryItems = [
-  { title: "Documents", url: "/documents", icon: FileText, description: "Company files and resources" },
-  { title: "Knowledge Base", url: "/wiki", icon: BookOpen, description: "Policies and procedures" },
-];
-
-const resourceItems = [
-  { title: "Tasks", url: "/tasks", icon: ListTodo, description: "Project tasks and assignments" },
-  { title: "Events", url: "/events", icon: CalendarDays, description: "Calendar and meetings" },
-  { title: "Messages", url: "/messages", icon: MessageSquare, description: "Team communication" },
 ];
 
 export function TopNav() {
@@ -71,55 +50,53 @@ export function TopNav() {
     ? `${profile.first_name[0]}${profile.last_name[0]}`
     : "U";
 
-  const isActive = (url: string) => location.pathname === url;
-
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-black/80 backdrop-blur-md">
-      <div className="container flex h-20 items-center justify-between px-6">
-        {/* Logo & Brand */}
-        <NavLink to="/" className="flex items-center gap-3 group">
-          <div className="bg-sky-500 p-2 rounded-lg shadow-[0_0_15px_rgba(14,165,233,0.3)] group-hover:scale-110 transition-transform">
-            <Shield className="h-6 w-6 text-white" />
+      <div className="container flex h-16 items-center justify-between px-4 lg:px-6">
+        {/* Logo */}
+        <NavLink to="/" className="flex items-center gap-3 group shrink-0">
+          <div className="bg-sky-500 p-1.5 rounded-lg shadow-[0_0_15px_rgba(14,165,233,0.3)] group-hover:scale-110 transition-transform">
+            <Shield className="h-5 w-5 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-black text-white tracking-tighter leading-none">BAY LEGAL</span>
-            <span className="text-[10px] font-bold text-sky-500 uppercase tracking-[0.2em] leading-none mt-1">Professional Corp</span>
+            <span className="text-lg font-black text-white tracking-tighter leading-none">BAY LEGAL</span>
+            <span className="text-[9px] font-bold text-sky-500 uppercase tracking-[0.2em] leading-none mt-0.5">Professional Corp</span>
           </div>
         </NavLink>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-8">
-          {["Directory", "Wiki", "Tasks", "Support"].map((item) => (
+        {/* Desktop Navigation Links */}
+        <nav className="hidden xl:flex items-center gap-1">
+          {navLinks.map((item) => (
             <NavLink
-              key={item}
-              to={`/${item.toLowerCase()}`}
+              key={item.url}
+              to={item.url}
               className={({ isActive }) => cn(
-                "text-sm font-bold uppercase tracking-widest transition-colors hover:text-sky-400",
-                isActive ? "text-sky-500" : "text-zinc-400"
+                "text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-md transition-colors hover:text-sky-400 hover:bg-sky-500/10",
+                isActive ? "text-sky-500 bg-sky-500/10" : "text-zinc-400"
               )}
             >
-              {item}
+              {item.title}
             </NavLink>
           ))}
         </nav>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-6">
-          <div className="hidden md:block w-64">
+        <div className="flex items-center gap-4">
+          <div className="hidden md:block w-52">
             <GlobalSearch />
           </div>
 
-          <Button variant="ghost" size="icon" className="relative text-zinc-400 hover:text-white">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-sky-500 rounded-full border-2 border-black" />
+          <Button variant="ghost" size="icon" className="relative text-zinc-400 hover:text-white h-9 w-9">
+            <Bell className="h-4 w-4" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-sky-500 rounded-full border-2 border-black" />
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 group">
-                <Avatar className="h-10 w-10 border-2 border-white/10 group-hover:border-sky-500 transition-colors">
+              <button className="flex items-center gap-2 group">
+                <Avatar className="h-8 w-8 border-2 border-white/10 group-hover:border-sky-500 transition-colors">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-zinc-800 text-zinc-100 font-bold">
+                  <AvatarFallback className="bg-zinc-800 text-zinc-100 font-bold text-xs">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -159,20 +136,35 @@ export function TopNav() {
           {/* Mobile Toggle */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden text-zinc-400">
-                <Menu className="h-6 w-6" />
+              <Button variant="ghost" size="icon" className="xl:hidden text-zinc-400 h-9 w-9">
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-black border-white/5 text-white">
-              <div className="flex flex-col gap-6 mt-12">
-                {["Home", "Directory", "Wiki", "Tasks", "Support"].map((item) => (
+            <SheetContent side="right" className="bg-black border-white/5 text-white w-72">
+              <div className="flex flex-col gap-2 mt-12">
+                <NavLink
+                  to="/"
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) => cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors",
+                    isActive ? "text-sky-500 bg-sky-500/10" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                  )}
+                >
+                  <Home className="h-4 w-4" />
+                  Home
+                </NavLink>
+                {navLinks.map((item) => (
                   <NavLink
-                    key={item}
-                    to={item === "Home" ? "/" : `/${item.toLowerCase()}`}
+                    key={item.url}
+                    to={item.url}
                     onClick={() => setMobileOpen(false)}
-                    className="text-lg font-bold uppercase tracking-widest hover:text-sky-500 transition-colors"
+                    className={({ isActive }) => cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors",
+                      isActive ? "text-sky-500 bg-sky-500/10" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    )}
                   >
-                    {item}
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
                   </NavLink>
                 ))}
               </div>
