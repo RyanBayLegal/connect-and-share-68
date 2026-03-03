@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Play, Square, Timer } from "lucide-react";
+import { Clock, Play, Square, Timer, ArrowRightLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -11,6 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 
 interface TimeEntry {
   id: string;
@@ -23,6 +24,7 @@ interface TimeStatus {
   id: string;
   name: string;
   color: string;
+  is_paid: boolean;
 }
 
 export function TimeTrackingHeaderWidget() {
@@ -35,7 +37,7 @@ export function TimeTrackingHeaderWidget() {
   const [elapsedTime, setElapsedTime] = useState("");
   const [open, setOpen] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!profile) return;
 
     try {
@@ -49,7 +51,7 @@ export function TimeTrackingHeaderWidget() {
           .limit(1),
         supabase
           .from("time_tracking_statuses")
-          .select("id, name, color")
+          .select("id, name, color, is_paid")
           .eq("is_active", true)
           .order("position"),
         supabase
@@ -74,11 +76,11 @@ export function TimeTrackingHeaderWidget() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [profile]);
 
   useEffect(() => {
     fetchData();
-  }, [profile]);
+  }, [fetchData]);
 
   useEffect(() => {
     const updateElapsed = () => {
@@ -97,22 +99,24 @@ export function TimeTrackingHeaderWidget() {
     return () => clearInterval(interval);
   }, [currentEntry]);
 
-  const handleClockIn = async () => {
+  const handleClockIn = async (statusId?: string) => {
     if (!profile) return;
     setIsSubmitting(true);
 
     try {
-      const defaultStatus = statuses.find(s => s.name.toLowerCase() === "working") || statuses[0];
+      const selectedStatus = statusId
+        ? statuses.find(s => s.id === statusId)
+        : statuses.find(s => s.name.toLowerCase() === "working") || statuses[0];
 
       const { error } = await supabase.from("time_entries").insert({
         employee_id: profile.id,
         clock_in: new Date().toISOString(),
-        status_id: defaultStatus?.id || null,
+        status_id: selectedStatus?.id || null,
         is_manual_entry: false,
       });
 
       if (error) throw error;
-      toast.success("Clocked in!");
+      toast.success(`Clocked in — ${selectedStatus?.name || "Working"}`);
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to clock in");
@@ -137,6 +141,43 @@ export function TimeTrackingHeaderWidget() {
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to clock out");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChangeStatus = async (newStatusId: string) => {
+    if (!currentEntry || !profile) return;
+    if (currentEntry.status_id === newStatusId) return;
+    setIsSubmitting(true);
+
+    const newStatus = statuses.find(s => s.id === newStatusId);
+
+    try {
+      const now = new Date().toISOString();
+
+      // Close current entry
+      const { error: closeError } = await supabase
+        .from("time_entries")
+        .update({ clock_out: now })
+        .eq("id", currentEntry.id);
+
+      if (closeError) throw closeError;
+
+      // Open new entry with new status
+      const { error: openError } = await supabase.from("time_entries").insert({
+        employee_id: profile.id,
+        clock_in: now,
+        status_id: newStatusId,
+        is_manual_entry: false,
+      });
+
+      if (openError) throw openError;
+
+      toast.success(`Switched to ${newStatus?.name || "new status"}`);
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to change status");
     } finally {
       setIsSubmitting(false);
     }
@@ -173,12 +214,20 @@ export function TimeTrackingHeaderWidget() {
               </span>
             )}
           </div>
+          {currentEntry && currentStatus && (
+            <span
+              className="hidden sm:inline text-[10px] font-bold uppercase px-1.5 py-0.5 rounded"
+              style={{ backgroundColor: currentStatus.color + "22", color: currentStatus.color }}
+            >
+              {currentStatus.name}
+            </span>
+          )}
           <span className="hidden sm:inline text-xs">
             {currentEntry ? elapsedTime : formatTotalTime(todayTotal)}
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72" align="end">
+      <PopoverContent className="w-80" align="end">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-sm flex items-center gap-2">
@@ -214,6 +263,43 @@ export function TimeTrackingHeaderWidget() {
                   Started at {new Date(currentEntry.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
+
+              {/* Status Switcher */}
+              {statuses.length > 1 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <ArrowRightLeft className="h-3 w-3" />
+                    Switch Status
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {statuses.map((status) => {
+                      const isActive = currentEntry.status_id === status.id;
+                      return (
+                        <button
+                          key={status.id}
+                          onClick={() => handleChangeStatus(status.id)}
+                          disabled={isSubmitting || isActive}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors border ${
+                            isActive
+                              ? "border-primary/30 bg-primary/10 text-foreground cursor-default"
+                              : "border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <span
+                            className="h-2.5 w-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: status.color }}
+                          />
+                          <span className="truncate">{status.name}</span>
+                          {!status.is_paid && (
+                            <span className="text-[9px] text-muted-foreground ml-auto">unpaid</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <Button
                 onClick={handleClockOut}
                 disabled={isSubmitting}
@@ -222,7 +308,7 @@ export function TimeTrackingHeaderWidget() {
                 className="w-full"
               >
                 <Square className="h-4 w-4 mr-2" />
-                {isSubmitting ? "Clocking out..." : "Clock Out"}
+                {isSubmitting ? "Processing..." : "Clock Out"}
               </Button>
             </>
           ) : (
@@ -230,19 +316,44 @@ export function TimeTrackingHeaderWidget() {
               <div className="text-center py-2">
                 <p className="text-sm text-muted-foreground">You're not clocked in</p>
               </div>
-              <Button
-                onClick={handleClockIn}
-                disabled={isSubmitting}
-                size="sm"
-                className="w-full"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                {isSubmitting ? "Clocking in..." : "Clock In"}
-              </Button>
+              {statuses.length > 1 ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Clock in as:</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {statuses.map((status) => (
+                      <Button
+                        key={status.id}
+                        onClick={() => handleClockIn(status.id)}
+                        disabled={isSubmitting}
+                        variant="outline"
+                        size="sm"
+                        className="justify-start gap-2"
+                      >
+                        <span
+                          className="h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: status.color }}
+                        />
+                        <span className="truncate text-xs">{status.name}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => handleClockIn()}
+                  disabled={isSubmitting}
+                  size="sm"
+                  className="w-full"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  {isSubmitting ? "Clocking in..." : "Clock In"}
+                </Button>
+              )}
             </>
           )}
 
-          <div className="pt-2 border-t flex items-center justify-between text-xs">
+          <Separator />
+          <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Today's Total</span>
             <span className="font-semibold">{formatTotalTime(todayTotal)}</span>
           </div>
