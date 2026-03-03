@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { TimeTrackingHeaderWidget } from "@/components/dashboard/TimeTrackingHeaderWidget";
 import { useBranding } from "@/hooks/useBranding";
 
 const quickLinks = [
@@ -145,6 +146,10 @@ export function TopNav() {
         <div className="flex items-center gap-3">
           <div className="hidden md:block w-52">
             <GlobalSearch />
+          </div>
+
+          <div className="hidden md:block">
+            <TimeTrackingHeaderWidget />
           </div>
 
           <ThemeToggle />
