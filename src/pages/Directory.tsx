@@ -559,7 +559,7 @@ export default function Directory() {
   );
 
   return (
-    <div className="space-y-6 px-6 md:px-10 lg:px-16 py-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
