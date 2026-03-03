@@ -17,6 +17,7 @@ import {
   GraduationCap,
   ChevronDown,
   LayoutGrid,
+  Briefcase,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -46,6 +47,10 @@ const quickLinks = [
   { title: "Training", url: "/training", icon: GraduationCap, description: "Courses & development" },
 ];
 
+const hrLinks = [
+  { title: "HR Dashboard", url: "/hr-dashboard", icon: Briefcase, description: "HR management hub" },
+];
+
 const resourceLinks = [
   { title: "Directory", url: "/directory", icon: Users, description: "Find team members" },
   { title: "Documents", url: "/documents", icon: FileText, description: "Files & resources" },
@@ -57,7 +62,7 @@ const resourceLinks = [
 const allLinks = [...quickLinks, ...resourceLinks];
 
 export function TopNav() {
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, isAdmin, isHRManager, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
   const { branding } = useBranding();
@@ -95,6 +100,20 @@ export function TopNav() {
                 isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
               )}
             >
+              {item.title}
+            </NavLink>
+          ))}
+
+          {isHRManager() && hrLinks.map((item) => (
+            <NavLink
+              key={item.url}
+              to={item.url}
+              className={({ isActive }) => cn(
+                "flex items-center gap-1 text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-md transition-colors hover:text-primary hover:bg-primary/10",
+                isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
+              )}
+            >
+              <item.icon className="h-3.5 w-3.5" />
               {item.title}
             </NavLink>
           ))}
@@ -218,6 +237,20 @@ export function TopNav() {
                   Home
                 </NavLink>
                 {allLinks.map((item) => (
+                  <NavLink
+                    key={item.url}
+                    to={item.url}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) => cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors",
+                      isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.title}
+                  </NavLink>
+                ))}
+                {isHRManager() && hrLinks.map((item) => (
                   <NavLink
                     key={item.url}
                     to={item.url}
