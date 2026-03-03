@@ -7,9 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { APP_NAME, COMPANY_NAME, COMPANY_TAGLINE } from "@/lib/constants";
 import { z } from "zod";
-import bayLegalLogo from "@/assets/bay-legal-logo.webp";
+import { useBranding } from "@/hooks/useBranding";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -18,6 +17,7 @@ const loginSchema = z.object({
 
 export default function Login() {
   const { user, signIn, isLoading } = useAuth();
+  const { branding } = useBranding();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -78,17 +78,23 @@ export default function Login() {
       <Card className="w-full max-w-md relative z-10 glass-card neon-border border-0">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto mb-4">
-            <img 
-              src={bayLegalLogo} 
-              alt={COMPANY_NAME}
-              className="h-20 w-20 rounded-xl shadow-lg"
-            />
+            {branding.logo_url ? (
+              <img 
+                src={branding.logo_url} 
+                alt={branding.company_name}
+                className="h-20 w-20 rounded-xl shadow-lg object-contain"
+              />
+            ) : (
+              <div className="h-20 w-20 rounded-xl bg-sky-500/20 flex items-center justify-center mx-auto shadow-lg">
+                <span className="text-3xl font-black text-sky-400">{branding.company_name?.[0] || "B"}</span>
+              </div>
+            )}
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">
-            {COMPANY_NAME} Hub
+            {branding.company_name} Hub
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            {COMPANY_TAGLINE}
+            {branding.company_slogan}
           </CardDescription>
         </CardHeader>
         <CardContent>
