@@ -8,6 +8,39 @@
 
 @layer base {
   :root {
+    /* Light Theme */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 199 89% 48%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
     /* Deep Charcoal / Black Theme */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
@@ -18,7 +51,7 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 199 89% 48%; /* Vibrant Blue/Sky */
+    --primary: 199 89% 48%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 3.7% 15.9%;
@@ -36,8 +69,6 @@
     --border: 240 3.7% 12%;
     --input: 240 3.7% 12%;
     --ring: 199 89% 48%;
-
-    --radius: 1rem;
   }
 }
 
@@ -48,6 +79,9 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  .dark body {
     background-image:
       radial-gradient(ellipse 80% 60% at 50% -20%, hsl(170 85% 45% / 0.06), transparent),
       radial-gradient(ellipse 60% 50% at 80% 100%, hsl(220 80% 40% / 0.05), transparent);
