@@ -1,128 +1,110 @@
 
-## Add HR Manager Quick Actions Widget to Dashboard
 
-This plan adds an HR-specific quick actions section to the main Dashboard that is only visible to users with the `hr_manager` role or Super Admins.
+## Dashboard Redesign & Feature Updates
 
----
+### Summary of Changes
 
-### Overview
+Based on the reference image and requirements, there are 7 key changes:
 
-Create a new widget similar to `TrainingQuickActionsWidget` that displays:
-- Key HR metrics (pending leave requests, active employees, pending approvals)
-- Quick action buttons for the 7 requested HR functions
-
----
-
-### Cross-Reference: Existing Pages
-
-| HR Button | Existing Page | Route |
-|-----------|---------------|-------|
-| Employee Records | Directory | `/directory` |
-| Payroll Management | Payroll | `/payroll` |
-| Leave Requests | Time Management | `/time-management` |
-| Compliance Reports | Documents | `/documents` |
-| Recruitment Dashboard | HR Onboarding | `/hr-onboarding` |
-| Employee Benefits | HR Settings | `/hr-settings` |
-| Training & Development | Training Management | `/training-management` |
-
-All pages already exist - we just need to surface them with the widget.
+1. **Remove "Your Resources" grid** from Dashboard — move resource links to TopNav
+2. **Remove ChatGPT widget** from Dashboard
+3. **Move HR Management widget** out of Dashboard into a separate HR tab/page only
+4. **Announcements filtering** — department-scoped vs global, department leaders can create
+5. **Birthdays/Anniversaries** — already based on profile `date_of_birth` and `date_hired` (confirmed working correctly)
+6. **Announcements priority on Dashboard** — important/critical announcements surface at top
+7. **Layout realignment** to match reference image design
 
 ---
 
-### Albonn's Role Status
+### Database Changes
 
-Verified in database: `albonn@baylegal.com` already has the `hr_manager` role assigned.
+**Migration needed**: The `announcements` table already has `target_department_id` column. We need to:
+- Add department-scoped filtering in the announcements query (show global + user's department only)
+- Allow department managers to create announcements (not just admins)
 
----
-
-### Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/components/dashboard/HRQuickActionsWidget.tsx` | HR-specific widget with stats and navigation buttons |
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/pages/Dashboard.tsx` | Import and render the new HR widget |
+No new tables needed.
 
 ---
 
-### Widget Design
+### File Changes
 
+#### 1. `src/components/layout/TopNav.tsx`
+- Add all resource links to desktop nav: Directory, Announcements, Documents, Wiki, Tasks, Training, Messages, Events
+- Add them to mobile menu as well
+- Use a dropdown/mega-menu for "Resources" or list them directly
+
+#### 2. `src/pages/Dashboard.tsx`
+- **Remove**: `resourceCards` array, "Your Resources" grid section, `ChatGPTWidget`, `HRQuickActionsWidget`
+- **Remove imports**: `ChatGPTWidget`, `HRQuickActionsWidget`, unused icons
+- **Keep**: Hero section, Announcements sidebar widget, BirthdaysAnniversariesWidget, GoogleReviewsWidget, ManagerProgressWidget, TrainingQuickActionsWidget
+- **Restructure layout**: Full-width hero → two-column layout below with Celebrations + Announcements on right, Google Reviews on left
+- **Announcements widget**: Sort by priority (critical > important > general) so important news appears first
+
+#### 3. `src/pages/Announcements.tsx`
+- **Filter by department**: Query announcements where `target_department_id IS NULL` (global) OR `target_department_id = user's department`
+- **Creation form**: Add a "Scope" selector (Global vs Department) — set `target_department_id` accordingly
+- **Who can create**: Allow `department_manager` role users to create department-scoped announcements (not just `isAdmin`)
+
+#### 4. `src/components/dashboard/HRQuickActionsWidget.tsx`
+- No changes to the component itself, but it will be **removed from Dashboard.tsx**
+- It already exists on `/hr-dashboard` page, so HR managers access it there
+
+---
+
+### Layout Reference (matching image)
+
+```text
+┌─────────────────────────────────────────────────────┐
+│ TopNav: Logo | Directory Announcements Documents    │
+│         Wiki Tasks Training Messages Events | 🔍 👤 │
+├─────────────────────────────────────────────────────┤
+│                  HERO BANNER                         │
+│          Bay Legal, PC Hub                           │
+│    [Explore Resources]  [Quick Wiki Access]          │
+├──────────────────────────┬──────────────────────────┤
+│                          │  🎂 Celebrations          │
+│   Google Reviews         │  Sarah Jenkins - Bday     │
+│   (carousel)             │  Marcus Webb - 5yr Anniv  │
+│                          ├──────────────────────────┤
+│                          │  📢 Announcements         │
+│                          │  (priority-sorted)        │
+│                          ├──────────────────────────┤
+│                          │  Manager Progress         │
+│                          │  Training Quick Actions   │
+└──────────────────────────┴──────────────────────────┘
 ```
-+------------------------------------------------------------------+
-| HR Management                                                     |
-+------------------------------------------------------------------+
-|  [Pending Requests: 5]  [Active Employees: 42]  [Approvals: 3]   |
-+------------------------------------------------------------------+
-|                                                                   |
-| [Employee Records]  [Payroll Management]  [Leave Requests]       |
-|                                                                   |
-| [Compliance Reports]  [Recruitment]  [Employee Benefits]          |
-|                                                                   |
-| [Training & Development]                                          |
-+------------------------------------------------------------------+
-```
 
 ---
 
-### Implementation Details
+### Announcements Department Scoping Logic
 
-**1. `HRQuickActionsWidget.tsx`**
-
-- Import `useAuth` and check `isHRManager()` and `rolesLoaded`
-- Show only if user is HR Manager or Super Admin
-- Fetch quick stats:
-  - Pending time-off requests (from `time_off_requests` where status = 'pending')
-  - Active employees (from `profiles` where is_active = true)
-  - Pending timesheet approvals (from `timesheets` where status = 'submitted')
-- Display 7 navigation buttons with icons:
-  - Users icon for Employee Records
-  - DollarSign for Payroll Management
-  - Calendar for Leave Requests
-  - FileText for Compliance Reports
-  - ClipboardList for Recruitment Dashboard
-  - Heart for Employee Benefits
-  - GraduationCap for Training & Development
-
-**2. Dashboard Integration**
-
-Add the widget after the Birthdays section and before Training Quick Actions:
 ```typescript
-import { HRQuickActionsWidget } from "@/components/dashboard/HRQuickActionsWidget";
+// Dashboard & Announcements page query
+const query = supabase
+  .from("announcements")
+  .select("*, category:announcement_categories(*), author:profiles(*)")
+  .eq("is_published", true)
+  .or(`target_department_id.is.null,target_department_id.eq.${profile?.department_id}`)
+  .order("published_at", { ascending: false });
+```
 
-// In the return statement
-<section className="container pt-4">
-  <HRQuickActionsWidget />
-</section>
+For the Dashboard widget, additionally sort critical/important first:
+```typescript
+// Sort: critical > important > general, then by date
+announcements.sort((a, b) => {
+  const priorityOrder = { critical: 0, important: 1, general: 2 };
+  const pA = priorityOrder[a.priority] ?? 2;
+  const pB = priorityOrder[b.priority] ?? 2;
+  if (pA !== pB) return pA - pB;
+  return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+});
 ```
 
 ---
 
-### Access Control
+### Access Control for Announcements Creation
 
-- Uses `isHRManager()` from AuthContext which returns `true` for:
-  - Users with `hr_manager` role
-  - Users with `super_admin` role
-- Uses `rolesLoaded` to prevent flash of incorrect content
+Currently only `isAdmin()` can create. Change to:
+- `isAdmin()` → can create global or department announcements
+- `hasRole("department_manager")` → can create department-scoped announcements for their own department
 
----
-
-### Visual Style
-
-- Matches the existing `TrainingQuickActionsWidget` gradient style
-- Uses a blue/teal gradient to differentiate from training (purple)
-- Responsive grid layout for buttons (3 columns on desktop, 2 on tablet, 1 on mobile)
-- Each button has an icon and label
-
----
-
-### User Experience
-
-When an HR manager (like Albonn) loads the Dashboard:
-1. The widget appears after Birthdays section
-2. Shows real-time stats for pending items
-3. Provides one-click access to all HR functions
-4. Regular employees do not see this widget
