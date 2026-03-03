@@ -261,7 +261,14 @@ export default function Wiki() {
     }
   };
 
-  const filteredArticles = articles.filter((article) => {
+  // Non-admin users only see company-wide + their own department articles
+  const visibleArticles = isAdmin()
+    ? articles
+    : articles.filter(
+        (a) => !a.department_id || a.department_id === profile?.department_id
+      );
+
+  const filteredArticles = visibleArticles.filter((article) => {
     const matchesCategory =
       selectedCategory === "all" || article.category_id === selectedCategory;
     const matchesDepartment =
@@ -354,20 +361,22 @@ export default function Wiki() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-            <SelectTrigger className="w-full sm:w-[200px] h-11">
-              <SelectValue placeholder="All Departments" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              <SelectItem value="company">Company-wide</SelectItem>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isAdmin() && (
+            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+              <SelectTrigger className="w-full sm:w-[200px] h-11">
+                <SelectValue placeholder="All Departments" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Departments</SelectItem>
+                <SelectItem value="company">Company-wide</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </Card>
 
@@ -376,7 +385,7 @@ export default function Wiki() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => {
             const IconComponent = iconMap[category.icon || "FileText"] || FileText;
-            const categoryArticles = articles.filter((a) => a.category_id === category.id);
+            const categoryArticles = visibleArticles.filter((a) => a.category_id === category.id);
             
             return (
               <Card
