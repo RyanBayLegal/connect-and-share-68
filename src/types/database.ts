@@ -32,6 +32,7 @@ export interface Profile {
   emergency_contact_relationship: string | null;
   created_at: string;
   updated_at: string;
+  offboarded_at: string | null;
   department?: Department;
   manager?: Profile;
 }

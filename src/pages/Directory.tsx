@@ -30,7 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus, Pencil, X, Save, Users, ChevronRight, Calendar, Cake, Lock } from "lucide-react";
+import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus, Pencil, X, Save, Users, ChevronRight, Calendar, Cake, Lock, UserX, UserCheck, LogOut } from "lucide-react";
 import { format } from "date-fns";
 import type { Profile, Department } from "@/types/database";
 import { OrgChart } from "@/components/directory/OrgChart";
@@ -43,6 +43,7 @@ export default function Directory() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
   const [selectedEmployee, setSelectedEmployee] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list" | "dept" | "org">("grid");
@@ -77,7 +78,6 @@ export default function Directory() {
         supabase
           .from("profiles")
           .select("*, department:departments!profiles_department_id_fkey(*)")
-          .eq("is_active", true)
           .order("first_name"),
         supabase.from("departments").select("*").order("name"),
       ]);
@@ -219,6 +219,31 @@ export default function Directory() {
     }
   };
 
+  // Offboard / Reactivate employee
+  const handleToggleActive = async () => {
+    if (!selectedEmployee) return;
+    const newActive = !selectedEmployee.is_active;
+    const offboardedAt = newActive ? null : new Date().toISOString().split('T')[0];
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          is_active: newActive, 
+          offboarded_at: offboardedAt 
+        })
+        .eq("id", selectedEmployee.id);
+
+      if (error) throw error;
+
+      toast.success(newActive ? "Employee reactivated!" : "Employee offboarded.");
+      setSelectedEmployee((prev) => prev ? { ...prev, is_active: newActive, offboarded_at: offboardedAt } : null);
+      await fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update status");
+    }
+  };
+
   // Close dialog and reset edit mode
   const handleCloseDialog = () => {
     setSelectedEmployee(null);
@@ -285,7 +310,12 @@ export default function Directory() {
     const matchesDepartment =
       departmentFilter === "all" || employee.department_id === departmentFilter;
 
-    return matchesSearch && matchesDepartment;
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && employee.is_active) ||
+      (statusFilter === "inactive" && !employee.is_active);
+
+    return matchesSearch && matchesDepartment && matchesStatus;
   });
 
   // Group employees by first letter of first name
@@ -375,6 +405,12 @@ export default function Directory() {
         <h3 className="font-semibold text-foreground text-lg">
           {employee.first_name} {employee.last_name}
         </h3>
+        {!employee.is_active && (
+          <Badge variant="destructive" className="mt-1 gap-1">
+            <UserX className="h-3 w-3" />
+            Inactive
+          </Badge>
+        )}
 
         {/* Department Lead Badge */}
         {isManager(employee.id) && (
@@ -609,6 +645,20 @@ export default function Directory() {
           </SelectContent>
         </Select>
 
+        {/* Status Filter - Admin only */}
+        {isAdmin() && (
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+            <SelectTrigger className="w-full lg:w-[160px] bg-background/50">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+
         {/* View Mode Tabs */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
           <TabsList className="bg-muted/50">
@@ -719,14 +769,28 @@ export default function Directory() {
                         Department Lead
                       </Badge>
                     )}
-                    <p className="text-muted-foreground mt-1">
+                     <p className="text-muted-foreground mt-1">
                       {selectedEmployee.job_title || "Employee"}
                     </p>
-                    {selectedEmployee.department && (
-                      <Badge variant="secondary" className="mt-2">
-                        {selectedEmployee.department.name}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {selectedEmployee.department && (
+                        <Badge variant="secondary">
+                          {selectedEmployee.department.name}
+                        </Badge>
+                      )}
+                      {!selectedEmployee.is_active && (
+                        <Badge variant="destructive" className="gap-1">
+                          <UserX className="h-3 w-3" />
+                          Inactive
+                        </Badge>
+                      )}
+                      {selectedEmployee.is_active && (
+                        <Badge variant="outline" className="gap-1 text-green-600 border-green-600/30">
+                          <UserCheck className="h-3 w-3" />
+                          Active
+                        </Badge>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
@@ -979,6 +1043,12 @@ export default function Directory() {
                           <span>Hired: {format(new Date(selectedEmployee.date_hired), 'MMM d, yyyy')}</span>
                         </div>
                       )}
+                      {selectedEmployee.offboarded_at && (
+                        <div className="flex items-center gap-3">
+                          <LogOut className="h-4 w-4 text-destructive" />
+                          <span className="text-destructive">Offboarded: {format(new Date(selectedEmployee.offboarded_at), 'MMM d, yyyy')}</span>
+                        </div>
+                      )}
                       {selectedEmployee.date_of_birth && (
                         <div className="flex items-center gap-3">
                           <Cake className="h-4 w-4 text-muted-foreground" />
@@ -1092,6 +1162,27 @@ export default function Directory() {
                       </a>
                     </Button>
                   </div>
+
+                  {/* Offboard / Reactivate - Admin only */}
+                  {isAdmin() && selectedEmployee.user_id !== user?.id && (
+                    <Button
+                      variant={selectedEmployee.is_active ? "destructive" : "default"}
+                      className="w-full"
+                      onClick={handleToggleActive}
+                    >
+                      {selectedEmployee.is_active ? (
+                        <>
+                          <UserX className="h-4 w-4 mr-2" />
+                          Offboard Employee
+                        </>
+                      ) : (
+                        <>
+                          <UserCheck className="h-4 w-4 mr-2" />
+                          Reactivate Employee
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </>
               )}
             </div>

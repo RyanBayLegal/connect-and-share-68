@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN offboarded_at date NULL;
