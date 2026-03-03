@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useBranding } from "@/hooks/useBranding";
 
 const quickLinks = [
@@ -65,11 +66,11 @@ export function TopNav() {
     : "U";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-black/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between px-4 lg:px-6">
         {/* Logo */}
         <NavLink to="/" className="flex items-center gap-3 group shrink-0">
-          <div className="bg-sky-500 p-1.5 rounded-lg shadow-[0_0_15px_rgba(14,165,233,0.3)] group-hover:scale-110 transition-transform overflow-hidden">
+          <div className="bg-primary p-1.5 rounded-lg shadow-[0_0_15px_hsl(var(--primary)/0.3)] group-hover:scale-110 transition-transform overflow-hidden">
             {branding.logo_url ? (
               <img src={branding.logo_url} alt="Logo" className="h-5 w-5 object-contain" />
             ) : (
@@ -77,8 +78,8 @@ export function TopNav() {
             )}
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-black text-white tracking-tighter leading-none">{branding.company_name?.toUpperCase() || "BAY LEGAL"}</span>
-            <span className="text-[9px] font-bold text-sky-500 uppercase tracking-[0.2em] leading-none mt-0.5">{branding.company_slogan || "Professional Corp"}</span>
+            <span className="text-lg font-black text-foreground tracking-tighter leading-none">{branding.company_name?.toUpperCase() || "BAY LEGAL"}</span>
+            <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] leading-none mt-0.5">{branding.company_slogan || "Professional Corp"}</span>
           </div>
         </NavLink>
 
@@ -89,8 +90,8 @@ export function TopNav() {
               key={item.url}
               to={item.url}
               className={({ isActive }) => cn(
-                "text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-md transition-colors hover:text-sky-400 hover:bg-sky-500/10",
-                isActive ? "text-sky-500 bg-sky-500/10" : "text-zinc-400"
+                "text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-md transition-colors hover:text-primary hover:bg-primary/10",
+                isActive ? "text-primary bg-primary/10" : "text-muted-foreground"
               )}
             >
               {item.title}
@@ -101,19 +102,19 @@ export function TopNav() {
           <Popover open={megaOpen} onOpenChange={setMegaOpen}>
             <PopoverTrigger asChild>
               <button
-                className={cn(
-                  "flex items-center gap-1 text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-md transition-colors hover:text-sky-400 hover:bg-sky-500/10",
-                  megaOpen ? "text-sky-500 bg-sky-500/10" : "text-zinc-400"
-                )}
+                  className={cn(
+                    "flex items-center gap-1 text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-md transition-colors hover:text-primary hover:bg-primary/10",
+                    megaOpen ? "text-primary bg-primary/10" : "text-muted-foreground"
+                  )}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
                 Resources
                 <ChevronDown className={cn("h-3 w-3 transition-transform", megaOpen && "rotate-180")} />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="center" className="w-[480px] p-0 bg-zinc-900 border-white/10 text-white">
+            <PopoverContent align="center" className="w-[480px] p-0 bg-popover border-border text-popover-foreground">
               <div className="p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">Resources & Tools</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Resources & Tools</h3>
                 <div className="grid grid-cols-2 gap-1">
                   {resourceLinks.map((item) => (
                     <NavLink
@@ -122,15 +123,15 @@ export function TopNav() {
                       onClick={() => setMegaOpen(false)}
                       className={({ isActive }) => cn(
                         "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
-                        isActive ? "bg-sky-500/10 text-sky-400" : "hover:bg-zinc-800 text-zinc-300"
+                        isActive ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
                       )}
                     >
-                      <div className="p-2 rounded-lg bg-zinc-800 text-sky-400">
+                      <div className="p-2 rounded-lg bg-muted text-primary">
                         <item.icon className="h-4 w-4" />
                       </div>
                       <div>
                         <p className="text-sm font-semibold">{item.title}</p>
-                        <p className="text-[11px] text-zinc-500">{item.description}</p>
+                        <p className="text-[11px] text-muted-foreground">{item.description}</p>
                       </div>
                     </NavLink>
                   ))}
@@ -146,43 +147,44 @@ export function TopNav() {
             <GlobalSearch />
           </div>
 
+          <ThemeToggle />
           <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 group">
-                <Avatar className="h-8 w-8 border-2 border-white/10 group-hover:border-sky-500 transition-colors">
+                <Avatar className="h-8 w-8 border-2 border-border group-hover:border-primary transition-colors">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-zinc-800 text-zinc-100 font-bold text-xs">
+                  <AvatarFallback className="bg-muted text-foreground font-bold text-xs">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/10 text-white">
+            <DropdownMenuContent align="end" className="w-56 bg-popover border-border text-popover-foreground">
               <div className="px-2 py-2">
                 <p className="text-sm font-bold">{profile?.first_name} {profile?.last_name}</p>
-                <p className="text-xs text-zinc-500">{profile?.email}</p>
+                <p className="text-xs text-muted-foreground">{profile?.email}</p>
               </div>
-              <DropdownMenuSeparator className="bg-white/5" />
-              <DropdownMenuItem asChild className="focus:bg-sky-500/10 focus:text-sky-400">
+              <DropdownMenuSeparator className="bg-border" />
+              <DropdownMenuItem asChild className="focus:bg-primary/10 focus:text-primary">
                 <NavLink to="/settings" className="flex items-center gap-2 w-full">
                   <Settings className="h-4 w-4" />
                   Settings
                 </NavLink>
               </DropdownMenuItem>
               {isAdmin() && (
-                <DropdownMenuItem asChild className="focus:bg-sky-500/10 focus:text-sky-400">
+                <DropdownMenuItem asChild className="focus:bg-primary/10 focus:text-primary">
                   <NavLink to="/admin" className="flex items-center gap-2 w-full">
                     <Shield className="h-4 w-4" />
                     Admin Panel
                   </NavLink>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator className="bg-white/5" />
+              <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
                 onClick={signOut}
-                className="text-red-400 focus:bg-red-500/10 focus:text-red-400"
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
@@ -193,18 +195,18 @@ export function TopNav() {
           {/* Mobile Toggle */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="xl:hidden text-zinc-400 h-9 w-9">
+              <Button variant="ghost" size="icon" className="xl:hidden text-muted-foreground h-9 w-9">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-black border-white/5 text-white w-72">
+            <SheetContent side="right" className="bg-background border-border text-foreground w-72">
               <div className="flex flex-col gap-2 mt-12">
                 <NavLink
                   to="/"
                   onClick={() => setMobileOpen(false)}
                   className={({ isActive }) => cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors",
-                    isActive ? "text-sky-500 bg-sky-500/10" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   )}
                 >
                   <Home className="h-4 w-4" />
@@ -217,7 +219,7 @@ export function TopNav() {
                     onClick={() => setMobileOpen(false)}
                     className={({ isActive }) => cn(
                       "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-colors",
-                      isActive ? "text-sky-500 bg-sky-500/10" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                      isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                   >
                     <item.icon className="h-4 w-4" />
