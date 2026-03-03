@@ -1905,6 +1905,7 @@ export type Database = {
       wiki_articles: {
         Row: {
           article_type: string
+          attachments: Json | null
           author_id: string | null
           category_id: string | null
           content: string
@@ -1921,6 +1922,7 @@ export type Database = {
         }
         Insert: {
           article_type?: string
+          attachments?: Json | null
           author_id?: string | null
           category_id?: string | null
           content: string
@@ -1937,6 +1939,7 @@ export type Database = {
         }
         Update: {
           article_type?: string
+          attachments?: Json | null
           author_id?: string | null
           category_id?: string | null
           content?: string

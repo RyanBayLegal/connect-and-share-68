@@ -50,7 +50,7 @@ const mainNavItems = [
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Messages", url: "/messages", icon: MessageSquare },
   { title: "Tasks", url: "/tasks", icon: ListTodo },
-  { title: "Knowledge Base", url: "/wiki", icon: BookOpen },
+  { title: "Libraries", url: "/wiki", icon: BookOpen },
   { title: "Events", url: "/events", icon: CalendarDays },
   { title: "Training", url: "/training", icon: GraduationCap },
   { title: "Time Tracking", url: "/time-tracking", icon: Clock },
