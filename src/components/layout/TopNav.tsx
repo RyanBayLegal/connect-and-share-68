@@ -45,7 +45,7 @@ const quickLinks = [
 
 const resourceLinks = [
   { title: "Documents", url: "/documents", icon: FileText, description: "Files & resources" },
-  { title: "Wiki", url: "/wiki", icon: BookOpen, description: "Knowledge base" },
+  { title: "Libraries", url: "/wiki", icon: BookOpen, description: "Knowledge base" },
   { title: "Tasks", url: "/tasks", icon: ListTodo, description: "Projects & assignments" },
   { title: "Training", url: "/training", icon: GraduationCap, description: "Courses & development" },
   { title: "Messages", url: "/messages", icon: MessageSquare, description: "Team communication" },

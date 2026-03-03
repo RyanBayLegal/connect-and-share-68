@@ -25,43 +25,35 @@ import {
   Plus,
   FileText,
   Eye,
-  Shield,
-  Users,
-  Lock,
-  Rocket,
-  HelpCircle,
   Star,
   History,
   Edit,
   Building2,
   Download,
   Info,
+  Settings2,
+  Paperclip,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { ArticleFormDialog } from "@/components/wiki/ArticleFormDialog";
+import { CategoryManageDialog } from "@/components/wiki/CategoryManageDialog";
 import { VersionHistoryDialog } from "@/components/wiki/VersionHistoryDialog";
 import { TemplateSelector, WikiTemplate } from "@/components/wiki/TemplateSelector";
 import { highlightText, stripHtml } from "@/lib/highlightText";
 import type { WikiArticle, WikiCategory, Profile, Department } from "@/types/database";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Shield,
-  Users,
-  Lock,
-  Rocket,
-  HelpCircle,
   FileText,
 };
 
 export default function Wiki() {
-  const { isAdmin, profile } = useAuth();
+  const { isAdmin, isSuperAdmin, profile } = useAuth();
   const [categories, setCategories] = useState<WikiCategory[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [articles, setArticles] = useState<WikiArticle[]>([]);
   const [templates, setTemplates] = useState<WikiTemplate[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedArticle, setSelectedArticle] = useState<WikiArticle | null>(null);
@@ -72,6 +64,7 @@ export default function Wiki() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isCategoryManageOpen, setIsCategoryManageOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<WikiArticle | null>(null);
 
   useEffect(() => {
@@ -110,6 +103,7 @@ export default function Wiki() {
     article_type: "article" | "policy";
     is_featured: boolean;
     department_id?: string | null;
+    attachments?: { name: string; url: string; type: string; size: number }[];
   }) => {
     if (!profile) return;
 
@@ -122,14 +116,15 @@ export default function Wiki() {
         author_id: profile.id,
         is_published: true,
         is_featured: data.is_featured,
-        article_type: data.article_type,
+        article_type: "article",
         current_version: 1,
         last_edited_by: profile.id,
+        attachments: data.attachments || [],
       });
 
       if (error) throw error;
 
-      toast.success(`${data.article_type === "policy" ? "Policy" : "Article"} published!`);
+      toast.success("Article published!");
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to create article");
@@ -269,8 +264,6 @@ export default function Wiki() {
   const filteredArticles = articles.filter((article) => {
     const matchesCategory =
       selectedCategory === "all" || article.category_id === selectedCategory;
-    const matchesType =
-      selectedType === "all" || article.article_type === selectedType;
     const matchesDepartment =
       selectedDepartment === "all" || 
       (selectedDepartment === "company" && !article.department_id) ||
@@ -279,7 +272,7 @@ export default function Wiki() {
       searchQuery === "" ||
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.content.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesType && matchesDepartment && matchesSearch;
+    return matchesCategory && matchesDepartment && matchesSearch;
   });
 
   const featuredArticles = filteredArticles.filter((a) => a.is_featured);
@@ -303,17 +296,25 @@ export default function Wiki() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Knowledge Base</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Libraries</h1>
           <p className="text-muted-foreground mt-1">
-            Company policies, procedures, and FAQs
+            Articles, resources, and documentation
           </p>
         </div>
-        {isAdmin() && (
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Article
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {isSuperAdmin() && (
+            <Button variant="outline" onClick={() => setIsCategoryManageOpen(true)}>
+              <Settings2 className="h-4 w-4 mr-2" />
+              Categories
+            </Button>
+          )}
+          {isAdmin() && (
+            <Button onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Article
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Non-admin info message */}
@@ -338,24 +339,6 @@ export default function Wiki() {
             className="pl-10"
           />
         </div>
-        <Select value={selectedType} onValueChange={setSelectedType}>
-          <SelectTrigger className="w-full sm:w-[150px]">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="article">
-              <span className="flex items-center gap-2">
-                <FileText className="h-3 w-3" /> Articles
-              </span>
-            </SelectItem>
-            <SelectItem value="policy">
-              <span className="flex items-center gap-2">
-                <Shield className="h-3 w-3" /> Policies
-              </span>
-            </SelectItem>
-          </SelectContent>
-        </Select>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All Categories" />
@@ -386,7 +369,7 @@ export default function Wiki() {
       </div>
 
       {/* Categories Overview */}
-      {selectedCategory === "all" && selectedType === "all" && selectedDepartment === "all" && searchQuery === "" && (
+      {selectedCategory === "all" && selectedDepartment === "all" && searchQuery === "" && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => {
             const IconComponent = iconMap[category.icon || "FileText"] || FileText;
@@ -478,12 +461,6 @@ export default function Wiki() {
             <>
               <DialogHeader>
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  {selectedArticle.article_type === "policy" && (
-                    <Badge variant="default" className="bg-blue-600">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Policy
-                    </Badge>
-                  )}
                   {selectedArticle.is_featured && (
                     <Badge variant="default" className="bg-amber-500">
                       <Star className="h-3 w-3 mr-1" />
@@ -607,6 +584,14 @@ export default function Wiki() {
           }}
         />
       )}
+
+      {/* Category Management Dialog */}
+      <CategoryManageDialog
+        open={isCategoryManageOpen}
+        onOpenChange={setIsCategoryManageOpen}
+        categories={categories}
+        onCategoriesChanged={fetchData}
+      />
     </div>
   );
 }
@@ -636,9 +621,6 @@ function ArticleCard({
             {searchQuery ? highlightText(article.title, searchQuery) : article.title}
           </CardTitle>
           <div className="flex items-center gap-1">
-            {article.article_type === "policy" && (
-              <Shield className="h-4 w-4 text-blue-600" />
-            )}
             {article.is_featured && <Star className="h-4 w-4 text-amber-500" />}
           </div>
         </div>

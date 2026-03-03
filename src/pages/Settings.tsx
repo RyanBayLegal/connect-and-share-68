@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,14 +19,28 @@ export default function Settings() {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
 
-  const [firstName, setFirstName] = useState(profile?.first_name || "");
-  const [lastName, setLastName] = useState(profile?.last_name || "");
-  const [jobTitle, setJobTitle] = useState(profile?.job_title || "");
-  const [phone, setPhone] = useState(profile?.phone || "");
-  const [location, setLocation] = useState(profile?.location || "");
-  const [bio, setBio] = useState(profile?.bio || "");
-  const [dateOfBirth, setDateOfBirth] = useState(profile?.date_of_birth || "");
-  const [dateHired, setDateHired] = useState(profile?.date_hired || "");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
+  const [bio, setBio] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [dateHired, setDateHired] = useState("");
+
+  // Sync state when profile loads
+  React.useEffect(() => {
+    if (profile) {
+      setFirstName(profile.first_name || "");
+      setLastName(profile.last_name || "");
+      setJobTitle(profile.job_title || "");
+      setPhone(profile.phone || "");
+      setLocation(profile.location || "");
+      setBio(profile.bio || "");
+      setDateOfBirth(profile.date_of_birth || "");
+      setDateHired(profile.date_hired || "");
+    }
+  }, [profile]);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

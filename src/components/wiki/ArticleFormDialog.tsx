@@ -16,9 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Shield, Star, Building2, LayoutTemplate } from "lucide-react";
+import { FileText, Star, Building2, LayoutTemplate, Paperclip, X, Upload } from "lucide-react";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { TemplateSelector, WikiTemplate } from "./TemplateSelector";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { Department } from "@/types/database";
 
 interface WikiCategory {
@@ -29,7 +31,7 @@ interface WikiCategory {
   position: number;
 }
 
-interface ArticleFormData {
+export interface ArticleFormData {
   title: string;
   content: string;
   category_id: string;
@@ -37,6 +39,7 @@ interface ArticleFormData {
   is_featured: boolean;
   change_summary?: string;
   department_id?: string | null;
+  attachments?: { name: string; url: string; type: string; size: number }[];
 }
 
 interface ArticleFormDialogProps {
@@ -64,11 +67,12 @@ export function ArticleFormDialog({
   const [content, setContent] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [departmentId, setDepartmentId] = useState<string>("all");
-  const [articleType, setArticleType] = useState<"article" | "policy">("article");
   const [isFeatured, setIsFeatured] = useState(false);
   const [changeSummary, setChangeSummary] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  const [attachments, setAttachments] = useState<{ name: string; url: string; type: string; size: number }[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (open && initialData) {
@@ -76,18 +80,17 @@ export function ArticleFormDialog({
       setContent(initialData.content || "");
       setCategoryId(initialData.category_id || "");
       setDepartmentId(initialData.department_id || "all");
-      setArticleType(initialData.article_type || "article");
       setIsFeatured(initialData.is_featured || false);
       setChangeSummary("");
+      setAttachments(initialData.attachments || []);
     } else if (!open) {
-      // Reset form when closing
       setTitle("");
       setContent("");
       setCategoryId("");
       setDepartmentId("all");
-      setArticleType("article");
       setIsFeatured(false);
       setChangeSummary("");
+      setAttachments([]);
     }
   }, [open, initialData]);
 
@@ -100,10 +103,11 @@ export function ArticleFormDialog({
         title,
         content,
         category_id: categoryId,
-        article_type: articleType,
+        article_type: "article",
         is_featured: isFeatured,
         change_summary: changeSummary || undefined,
         department_id: departmentId === "all" ? null : departmentId,
+        attachments,
       });
       onOpenChange(false);
     } finally {
@@ -113,11 +117,56 @@ export function ArticleFormDialog({
 
   const handleSelectTemplate = (template: WikiTemplate) => {
     setContent(template.content);
-    setArticleType(template.article_type);
     if (template.category_id) {
       setCategoryId(template.category_id);
     }
     setIsTemplateOpen(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split(".").pop();
+        const filePath = `wiki-attachments/${Date.now()}-${file.name}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("documents")
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("documents")
+          .getPublicUrl(filePath);
+
+        setAttachments(prev => [...prev, {
+          name: file.name,
+          url: urlData.publicUrl,
+          type: file.type,
+          size: file.size,
+        }]);
+      }
+      toast.success("File(s) attached!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload file");
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -146,31 +195,6 @@ export function ArticleFormDialog({
               </div>
             )}
 
-            {/* Article Type Selector */}
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={articleType === "article" ? "default" : "outline"}
-                  className="flex-1"
-                  onClick={() => setArticleType("article")}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Article
-                </Button>
-                <Button
-                  type="button"
-                  variant={articleType === "policy" ? "default" : "outline"}
-                  className="flex-1"
-                  onClick={() => setArticleType("policy")}
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Policy
-                </Button>
-              </div>
-            </div>
-
             {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
@@ -178,7 +202,7 @@ export function ArticleFormDialog({
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={articleType === "policy" ? "Enter policy title..." : "Enter article title..."}
+                placeholder="Enter article title..."
                 required
               />
             </div>
@@ -240,11 +264,46 @@ export function ArticleFormDialog({
               <RichTextEditor
                 value={content}
                 onChange={setContent}
-                placeholder={articleType === "policy" 
-                  ? "Write your policy content here. Include scope, guidelines, and procedures..."
-                  : "Write your article content here..."
-                }
+                placeholder="Write your article content here..."
               />
+            </div>
+
+            {/* Attachments */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <Paperclip className="h-3 w-3" />
+                Attachments
+              </Label>
+              <div className="border border-input rounded-md p-3 space-y-2">
+                {attachments.length > 0 && (
+                  <div className="space-y-1">
+                    {attachments.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-muted/50 rounded px-3 py-2 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{file.name}</span>
+                          <span className="text-xs text-muted-foreground shrink-0">({formatFileSize(file.size)})</span>
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeAttachment(index)}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Upload className="h-4 w-4" />
+                  {isUploading ? "Uploading..." : "Add documents or images"}
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    disabled={isUploading}
+                  />
+                </label>
+              </div>
             </div>
 
             {/* Change Summary (only for editing) */}
