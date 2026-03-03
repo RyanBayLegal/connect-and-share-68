@@ -128,6 +128,33 @@ export type Database = {
           },
         ]
       }
+      branding_settings: {
+        Row: {
+          company_name: string
+          company_slogan: string
+          created_at: string
+          id: string
+          logo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string
+          company_slogan?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          company_slogan?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_room_members: {
         Row: {
           id: string
