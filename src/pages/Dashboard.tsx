@@ -13,7 +13,7 @@ import { ManagerProgressWidget } from "@/components/dashboard/ManagerProgressWid
 import { BirthdaysAnniversariesWidget } from "@/components/dashboard/BirthdaysAnniversariesWidget";
 import { GoogleReviewsWidget } from "@/components/dashboard/GoogleReviewsWidget";
 import { TrainingQuickActionsWidget } from "@/components/dashboard/TrainingQuickActionsWidget";
-import { LeaveRequestWidget } from "@/components/dashboard/LeaveRequestWidget";
+
 import { useBranding } from "@/hooks/useBranding";
 
 export default function Dashboard() {
@@ -177,10 +177,9 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Row 2: Leave Request | Manager Progress | Training */}
+      {/* Row 2: Manager Progress | Training */}
       <section>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <LeaveRequestWidget />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <ManagerProgressWidget />
           <TrainingQuickActionsWidget />
         </div>
