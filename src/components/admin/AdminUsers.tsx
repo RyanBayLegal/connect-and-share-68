@@ -29,6 +29,7 @@ export function AdminUsers() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<(Profile & { roles: AppRole[] }) | null>(null);
   const [editRoles, setEditRoles] = useState<AppRole[]>([]);
+  const [editDepartment, setEditDepartment] = useState<string>("");
 
   // Status toggle state
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
@@ -116,6 +117,7 @@ export function AdminUsers() {
   const openEditDialog = (user: Profile & { roles: AppRole[] }) => {
     setEditingUser(user);
     setEditRoles(user.roles);
+    setEditDepartment(user.department_id || "");
     setIsEditOpen(true);
   };
 
@@ -125,11 +127,19 @@ export function AdminUsers() {
     );
   };
 
-  const handleUpdateRoles = async () => {
+  const handleUpdateUser = async () => {
     if (!editingUser) return;
     setIsSubmitting(true);
 
     try {
+      // Update department
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ department_id: editDepartment || null })
+        .eq("id", editingUser.id);
+
+      if (profileError) throw profileError;
+
       // Delete existing roles
       const { error: deleteError } = await supabase
         .from("user_roles")
@@ -150,13 +160,13 @@ export function AdminUsers() {
         if (insertError) throw insertError;
       }
 
-      toast.success("User roles updated successfully!");
+      toast.success("User updated successfully!");
       setIsEditOpen(false);
       setEditingUser(null);
       fetchData();
     } catch (error: any) {
-      console.error("Error updating roles:", error);
-      toast.error(error.message || "Failed to update roles");
+      console.error("Error updating user:", error);
+      toast.error(error.message || "Failed to update user");
     } finally {
       setIsSubmitting(false);
     }
@@ -357,12 +367,24 @@ export function AdminUsers() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                Edit Roles for {editingUser?.first_name} {editingUser?.last_name}
+                Edit {editingUser?.first_name} {editingUser?.last_name}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Department</Label>
+                <Select value={editDepartment} onValueChange={setEditDepartment}>
+                  <SelectTrigger><SelectValue placeholder="No department" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="text-sm text-muted-foreground">
-                Select the roles you want to assign to this user. Users can have multiple roles.
+                Select the roles you want to assign to this user.
               </p>
               <div className="space-y-2">
                 {(Object.keys(ROLE_LABELS) as AppRole[]).map((role) => (
@@ -396,7 +418,7 @@ export function AdminUsers() {
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-                <Button onClick={handleUpdateRoles} disabled={isSubmitting}>
+                <Button onClick={handleUpdateUser} disabled={isSubmitting}>
                   {isSubmitting ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
