@@ -14,8 +14,9 @@ import {
   BookOpen,
   CalendarDays,
   Menu,
-  Bell,
   GraduationCap,
+  ChevronDown,
+  LayoutGrid,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -27,24 +28,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
+import { NotificationBell } from "@/components/layout/NotificationBell";
+import { useBranding } from "@/hooks/useBranding";
 
-const navLinks = [
-  { title: "Directory", url: "/directory", icon: Users },
-  { title: "Announcements", url: "/announcements", icon: Megaphone },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Wiki", url: "/wiki", icon: BookOpen },
-  { title: "Tasks", url: "/tasks", icon: ListTodo },
-  { title: "Training", url: "/training", icon: GraduationCap },
-  { title: "Messages", url: "/messages", icon: MessageSquare },
-  { title: "Events", url: "/events", icon: CalendarDays },
+const quickLinks = [
+  { title: "Directory", url: "/directory", icon: Users, description: "Find team members" },
+  { title: "Announcements", url: "/announcements", icon: Megaphone, description: "Company news & updates" },
 ];
+
+const resourceLinks = [
+  { title: "Documents", url: "/documents", icon: FileText, description: "Files & resources" },
+  { title: "Wiki", url: "/wiki", icon: BookOpen, description: "Knowledge base" },
+  { title: "Tasks", url: "/tasks", icon: ListTodo, description: "Projects & assignments" },
+  { title: "Training", url: "/training", icon: GraduationCap, description: "Courses & development" },
+  { title: "Messages", url: "/messages", icon: MessageSquare, description: "Team communication" },
+  { title: "Events", url: "/events", icon: CalendarDays, description: "Calendar & meetings" },
+];
+
+const allLinks = [...quickLinks, ...resourceLinks];
 
 export function TopNav() {
   const { profile, isAdmin, signOut } = useAuth();
-  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [megaOpen, setMegaOpen] = useState(false);
+  const { branding } = useBranding();
 
   const initials = profile
     ? `${profile.first_name[0]}${profile.last_name[0]}`
@@ -55,18 +69,22 @@ export function TopNav() {
       <div className="container flex h-16 items-center justify-between px-4 lg:px-6">
         {/* Logo */}
         <NavLink to="/" className="flex items-center gap-3 group shrink-0">
-          <div className="bg-sky-500 p-1.5 rounded-lg shadow-[0_0_15px_rgba(14,165,233,0.3)] group-hover:scale-110 transition-transform">
-            <Shield className="h-5 w-5 text-white" />
+          <div className="bg-sky-500 p-1.5 rounded-lg shadow-[0_0_15px_rgba(14,165,233,0.3)] group-hover:scale-110 transition-transform overflow-hidden">
+            {branding.logo_url ? (
+              <img src={branding.logo_url} alt="Logo" className="h-5 w-5 object-contain" />
+            ) : (
+              <Shield className="h-5 w-5 text-white" />
+            )}
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-black text-white tracking-tighter leading-none">BAY LEGAL</span>
-            <span className="text-[9px] font-bold text-sky-500 uppercase tracking-[0.2em] leading-none mt-0.5">Professional Corp</span>
+            <span className="text-lg font-black text-white tracking-tighter leading-none">{branding.company_name?.split(",")[0]?.toUpperCase() || "BAY LEGAL"}</span>
+            <span className="text-[9px] font-bold text-sky-500 uppercase tracking-[0.2em] leading-none mt-0.5">{branding.company_name?.split(",")[1]?.trim() || "Professional Corp"}</span>
           </div>
         </NavLink>
 
-        {/* Desktop Navigation Links */}
+        {/* Desktop Navigation */}
         <nav className="hidden xl:flex items-center gap-1">
-          {navLinks.map((item) => (
+          {quickLinks.map((item) => (
             <NavLink
               key={item.url}
               to={item.url}
@@ -78,18 +96,57 @@ export function TopNav() {
               {item.title}
             </NavLink>
           ))}
+
+          {/* Mega Menu for Resources */}
+          <Popover open={megaOpen} onOpenChange={setMegaOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className={cn(
+                  "flex items-center gap-1 text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-md transition-colors hover:text-sky-400 hover:bg-sky-500/10",
+                  megaOpen ? "text-sky-500 bg-sky-500/10" : "text-zinc-400"
+                )}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Resources
+                <ChevronDown className={cn("h-3 w-3 transition-transform", megaOpen && "rotate-180")} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="center" className="w-[480px] p-0 bg-zinc-900 border-white/10 text-white">
+              <div className="p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">Resources & Tools</h3>
+                <div className="grid grid-cols-2 gap-1">
+                  {resourceLinks.map((item) => (
+                    <NavLink
+                      key={item.url}
+                      to={item.url}
+                      onClick={() => setMegaOpen(false)}
+                      className={({ isActive }) => cn(
+                        "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
+                        isActive ? "bg-sky-500/10 text-sky-400" : "hover:bg-zinc-800 text-zinc-300"
+                      )}
+                    >
+                      <div className="p-2 rounded-lg bg-zinc-800 text-sky-400">
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{item.title}</p>
+                        <p className="text-[11px] text-zinc-500">{item.description}</p>
+                      </div>
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </nav>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="hidden md:block w-52">
             <GlobalSearch />
           </div>
 
-          <Button variant="ghost" size="icon" className="relative text-zinc-400 hover:text-white h-9 w-9">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-sky-500 rounded-full border-2 border-black" />
-          </Button>
+          <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -153,7 +210,7 @@ export function TopNav() {
                   <Home className="h-4 w-4" />
                   Home
                 </NavLink>
-                {navLinks.map((item) => (
+                {allLinks.map((item) => (
                   <NavLink
                     key={item.url}
                     to={item.url}

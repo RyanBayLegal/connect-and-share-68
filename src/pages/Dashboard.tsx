@@ -8,29 +8,26 @@ import { Megaphone, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import type { Announcement } from "@/types/database";
-import { PRIORITIES, COMPANY_NAME } from "@/lib/constants";
+import { PRIORITIES } from "@/lib/constants";
 import { ManagerProgressWidget } from "@/components/dashboard/ManagerProgressWidget";
 import { BirthdaysAnniversariesWidget } from "@/components/dashboard/BirthdaysAnniversariesWidget";
 import { GoogleReviewsWidget } from "@/components/dashboard/GoogleReviewsWidget";
 import { TrainingQuickActionsWidget } from "@/components/dashboard/TrainingQuickActionsWidget";
+import { useBranding } from "@/hooks/useBranding";
 
 export default function Dashboard() {
   const { profile, user } = useAuth();
   const [recentAnnouncements, setRecentAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { branding } = useBranding();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user) return;
-
       try {
         const { data: announcements } = await supabase
           .from("announcements")
-          .select(`
-            *,
-            category:announcement_categories(*),
-            author:profiles(*)
-          `)
+          .select(`*, category:announcement_categories(*), author:profiles(*)`)
           .eq("is_published", true)
           .or(
             profile?.department_id
@@ -40,7 +37,6 @@ export default function Dashboard() {
           .order("published_at", { ascending: false })
           .limit(5);
 
-        // Sort by priority: critical > important > general
         const sorted = ((announcements as unknown as Announcement[]) || []).sort((a, b) => {
           const priorityOrder: Record<string, number> = { critical: 0, important: 1, general: 2 };
           const pA = priorityOrder[a.priority] ?? 2;
@@ -86,10 +82,10 @@ export default function Dashboard() {
               • CORPORATE PORTAL
             </Badge>
             <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
-              Bay Legal, PC Hub
+              {branding.company_name} Hub
             </h1>
             <p className="max-w-2xl text-zinc-300 text-lg md:text-xl leading-relaxed mb-10">
-              Your unified knowledge base for policies, high-performance resources, and professional support.
+              {branding.company_slogan}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Button asChild size="lg" className="bg-sky-500 hover:bg-sky-400 text-white font-bold px-8 shadow-[0_0_20px_rgba(14,165,233,0.4)] transition-all hover:scale-105">
@@ -103,71 +99,83 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Two-Column Layout: Google Reviews left, Sidebar right */}
+      {/* Main Content: Announcements center, sidebars */}
       <section className="container pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Google Reviews */}
-          <div className="lg:col-span-2 space-y-8">
-            <GoogleReviewsWidget />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left: Celebrations + Manager Progress */}
+          <div className="lg:col-span-3 space-y-6">
+            <BirthdaysAnniversariesWidget />
+            <ManagerProgressWidget />
+            <TrainingQuickActionsWidget />
           </div>
 
-          {/* Right Column: Celebrations, Announcements, Manager Progress, Training */}
-          <div className="space-y-6">
-            <BirthdaysAnniversariesWidget />
-
-            {/* Announcements Widget - priority sorted */}
+          {/* Center: Announcements (prominent) */}
+          <div className="lg:col-span-6">
             <Card className="bg-zinc-900/40 border-white/5 overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-b from-white/[0.02] to-transparent">
                 <div className="flex items-center gap-2">
-                  <Megaphone className="h-4 w-4 text-sky-500" />
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider">Announcements</CardTitle>
+                  <Megaphone className="h-5 w-5 text-sky-500" />
+                  <CardTitle className="text-lg font-bold uppercase tracking-wider">Announcements</CardTitle>
                 </div>
-                <Link to="/announcements" className="text-[10px] font-bold text-sky-500 hover:text-sky-400 uppercase tracking-tighter">View All</Link>
+                <Link to="/announcements" className="text-xs font-bold text-sky-500 hover:text-sky-400 uppercase tracking-wider">View All →</Link>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
-                {recentAnnouncements.slice(0, 3).map((announcement) => (
-                  <Link key={announcement.id} to="/announcements" className="group block">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge
-                        variant={
-                          announcement.priority === "critical"
-                            ? "destructive"
-                            : announcement.priority === "important"
-                            ? "default"
-                            : "secondary"
-                        }
-                        className="text-[9px] uppercase px-2 py-0"
-                      >
-                        {PRIORITIES[announcement.priority]?.label || announcement.priority}
-                      </Badge>
-                      {announcement.category && (
-                        <Badge variant="outline" className="text-[9px] uppercase border-sky-500/30 text-sky-400 px-2 py-0">
-                          {announcement.category.name}
+                {recentAnnouncements.length === 0 ? (
+                  <p className="text-sm text-zinc-500 text-center py-8">No announcements yet</p>
+                ) : (
+                  recentAnnouncements.map((announcement) => (
+                    <Link key={announcement.id} to="/announcements" className="group block p-4 rounded-xl bg-zinc-800/30 hover:bg-zinc-800/60 border border-white/5 hover:border-sky-500/20 transition-all">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge
+                          variant={
+                            announcement.priority === "critical"
+                              ? "destructive"
+                              : announcement.priority === "important"
+                              ? "default"
+                              : "secondary"
+                          }
+                          className="text-[10px] uppercase px-2 py-0"
+                        >
+                          {PRIORITIES[announcement.priority]?.label || announcement.priority}
                         </Badge>
-                      )}
-                    </div>
-                    <h4 className="font-bold text-sm text-zinc-100 line-clamp-2 leading-snug group-hover:text-sky-400 transition-colors">
-                      {announcement.title}
-                    </h4>
-                    <p className="text-xs text-zinc-500 line-clamp-2 mt-1 leading-relaxed">
-                      {announcement.content}
-                    </p>
-                    {announcement.published_at && (
-                      <p className="text-[10px] text-zinc-600 mt-1 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatDistanceToNow(new Date(announcement.published_at), { addSuffix: true })}
+                        {announcement.target_department_id ? (
+                          <Badge variant="outline" className="text-[10px] text-sky-400 border-sky-500/30 px-2 py-0">Dept</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-2 py-0">Global</Badge>
+                        )}
+                        {announcement.category && (
+                          <Badge variant="outline" className="text-[10px] px-2 py-0" style={{ borderColor: announcement.category.color, color: announcement.category.color }}>
+                            {announcement.category.name}
+                          </Badge>
+                        )}
+                      </div>
+                      <h4 className="font-bold text-base text-zinc-100 group-hover:text-sky-400 transition-colors mb-1">
+                        {announcement.title}
+                      </h4>
+                      <p className="text-sm text-zinc-400 line-clamp-2 leading-relaxed">
+                        {announcement.content}
                       </p>
-                    )}
-                  </Link>
-                ))}
-                {recentAnnouncements.length === 0 && (
-                  <p className="text-sm text-zinc-500 text-center py-4">No announcements</p>
+                      <div className="flex items-center gap-3 mt-3 text-xs text-zinc-500">
+                        {announcement.published_at && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatDistanceToNow(new Date(announcement.published_at), { addSuffix: true })}
+                          </span>
+                        )}
+                        {announcement.author && (
+                          <span>{announcement.author.first_name} {announcement.author.last_name}</span>
+                        )}
+                      </div>
+                    </Link>
+                  ))
                 )}
               </CardContent>
             </Card>
+          </div>
 
-            <ManagerProgressWidget />
-            <TrainingQuickActionsWidget />
+          {/* Right: Google Reviews */}
+          <div className="lg:col-span-3">
+            <GoogleReviewsWidget />
           </div>
         </div>
       </section>
