@@ -13,6 +13,7 @@ import { ManagerProgressWidget } from "@/components/dashboard/ManagerProgressWid
 import { BirthdaysAnniversariesWidget } from "@/components/dashboard/BirthdaysAnniversariesWidget";
 import { GoogleReviewsWidget } from "@/components/dashboard/GoogleReviewsWidget";
 import { TrainingQuickActionsWidget } from "@/components/dashboard/TrainingQuickActionsWidget";
+import { LeaveRequestWidget } from "@/components/dashboard/LeaveRequestWidget";
 import { useBranding } from "@/hooks/useBranding";
 
 export default function Dashboard() {
@@ -105,6 +106,7 @@ export default function Dashboard() {
           {/* Left: Celebrations + Manager Progress */}
           <div className="lg:col-span-3 space-y-6">
             <BirthdaysAnniversariesWidget />
+            <LeaveRequestWidget />
             <ManagerProgressWidget />
             <TrainingQuickActionsWidget />
           </div>
