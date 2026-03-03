@@ -190,7 +190,7 @@ export default function DepartmentHub() {
 
   if (!selectedDepartmentId && !profile?.department_id) {
     return (
-      <div className="p-6">
+      <div>
         <Card className="max-w-md mx-auto">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -218,7 +218,7 @@ export default function DepartmentHub() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -65,9 +65,9 @@ export default function Dashboard() {
   }
 
   return (
-    <>
+    <div className="space-y-8">
       {/* Hero Section */}
-      <section className="container py-8">
+      <section>
         <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
           <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent z-10" />
@@ -100,7 +100,7 @@ export default function Dashboard() {
       </section>
 
       {/* Main Content: Announcements center, sidebars */}
-      <section className="container pb-12">
+      <section>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left: Celebrations + Manager Progress */}
           <div className="lg:col-span-3 space-y-6">
@@ -179,6 +179,6 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
