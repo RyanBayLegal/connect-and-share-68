@@ -31,10 +31,12 @@ export function TimeTrackingHeaderWidget() {
   const { profile } = useAuth();
   const [currentEntry, setCurrentEntry] = useState<TimeEntry | null>(null);
   const [todayTotal, setTodayTotal] = useState(0);
+  const [todayClosedTotal, setTodayClosedTotal] = useState(0);
   const [statuses, setStatuses] = useState<TimeStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [elapsedTime, setElapsedTime] = useState("");
+  const [liveTodayTotal, setLiveTodayTotal] = useState("");
   const [open, setOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -64,13 +66,15 @@ export function TimeTrackingHeaderWidget() {
       setCurrentEntry(entryData?.[0] || null);
       setStatuses((statusData || []) as TimeStatus[]);
 
-      let total = 0;
+      let closedTotal = 0;
       (todayEntries || []).forEach((entry: any) => {
         const start = new Date(entry.clock_in).getTime();
-        const end = entry.clock_out ? new Date(entry.clock_out).getTime() : Date.now();
-        total += end - start;
+        if (entry.clock_out) {
+          closedTotal += new Date(entry.clock_out).getTime() - start;
+        }
       });
-      setTodayTotal(total);
+      setTodayClosedTotal(closedTotal);
+      setTodayTotal(closedTotal);
     } catch (error) {
       console.error("Error fetching time data:", error);
     } finally {
@@ -90,14 +94,22 @@ export function TimeTrackingHeaderWidget() {
         const diff = now - start;
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        setElapsedTime(`${hours}h ${minutes}m`);
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setElapsedTime(`${hours}h ${minutes}m ${seconds}s`);
+
+        // Live today total = closed entries + current session
+        const liveTotal = todayClosedTotal + diff;
+        setTodayTotal(liveTotal);
+        setLiveTodayTotal(formatTime(liveTotal));
+      } else {
+        setLiveTodayTotal(formatTime(todayClosedTotal));
       }
     };
 
     updateElapsed();
-    const interval = setInterval(updateElapsed, 60000);
+    const interval = setInterval(updateElapsed, 1000);
     return () => clearInterval(interval);
-  }, [currentEntry]);
+  }, [currentEntry, todayClosedTotal]);
 
   const handleClockIn = async (statusId?: string) => {
     if (!profile) return;
@@ -183,11 +195,14 @@ export function TimeTrackingHeaderWidget() {
     }
   };
 
-  const formatTotalTime = (ms: number) => {
+  const formatTime = (ms: number) => {
     const hours = Math.floor(ms / (1000 * 60 * 60));
     const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
+    const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+    return `${hours}h ${minutes}m ${seconds}s`;
   };
+
+  const formatTotalTime = formatTime;
 
   const getCurrentStatus = () => {
     if (!currentEntry?.status_id) return null;
@@ -355,7 +370,7 @@ export function TimeTrackingHeaderWidget() {
           <Separator />
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Today's Total</span>
-            <span className="font-semibold">{formatTotalTime(todayTotal)}</span>
+            <span className="font-semibold font-mono">{liveTodayTotal || formatTotalTime(todayTotal)}</span>
           </div>
         </div>
       </PopoverContent>
