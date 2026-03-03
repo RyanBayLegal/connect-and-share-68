@@ -108,7 +108,7 @@ export default function Wiki() {
     if (!profile) return;
 
     try {
-      const { error } = await supabase.from("wiki_articles").insert({
+      const { data: insertedArticle, error } = await supabase.from("wiki_articles").insert({
         title: data.title,
         content: data.content,
         category_id: data.category_id || null,
@@ -120,9 +120,21 @@ export default function Wiki() {
         current_version: 1,
         last_edited_by: profile.id,
         attachments: data.attachments || [],
-      });
+      }).select("id").single();
 
       if (error) throw error;
+
+      // Create initial version entry (v1)
+      if (insertedArticle) {
+        await supabase.from("wiki_article_versions").insert({
+          article_id: insertedArticle.id,
+          version_number: 1,
+          title: data.title,
+          content: data.content,
+          change_summary: "Initial version",
+          edited_by: profile.id,
+        });
+      }
 
       toast.success("Article published!");
       fetchData();
@@ -547,6 +559,30 @@ export default function Wiki() {
                 {/* Render HTML content safely */}
                 <div dangerouslySetInnerHTML={{ __html: selectedArticle.content }} />
               </div>
+
+              {/* Attachments */}
+              {selectedArticle.attachments && Array.isArray(selectedArticle.attachments) && (selectedArticle.attachments as any[]).length > 0 && (
+                <div className="mt-6 border-t pt-4">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Paperclip className="h-4 w-4" />
+                    Attachments
+                  </h3>
+                  <div className="space-y-2">
+                    {(selectedArticle.attachments as any[]).map((file: any, index: number) => (
+                      <a
+                        key={index}
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors text-sm"
+                      >
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="truncate">{file.name}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </DialogContent>

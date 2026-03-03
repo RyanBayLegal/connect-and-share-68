@@ -158,6 +158,7 @@ export interface WikiArticle {
   current_version: number;
   last_edited_by: string | null;
   article_type: 'article' | 'policy';
+  attachments: { name: string; url: string; type: string; size: number }[] | null;
   created_at: string;
   updated_at: string;
   category?: WikiCategory;

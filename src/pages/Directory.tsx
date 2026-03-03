@@ -57,6 +57,7 @@ export default function Directory() {
   const [editLocation, setEditLocation] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editManagerId, setEditManagerId] = useState<string | null>(null);
+  const [editDepartmentId, setEditDepartmentId] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   
   // Sensitive fields (HR/Super Admin only)
@@ -116,6 +117,7 @@ export default function Directory() {
     setEditLocation(selectedEmployee.location || "");
     setEditBio(selectedEmployee.bio || "");
     setEditManagerId(selectedEmployee.manager_id || null);
+    setEditDepartmentId(selectedEmployee.department_id || "");
     // Sensitive fields (HR/Super Admin only)
     if (canViewSensitiveData()) {
       setEditDateHired(selectedEmployee.date_hired || "");
@@ -137,6 +139,7 @@ export default function Directory() {
     setEditLocation("");
     setEditBio("");
     setEditManagerId(null);
+    setEditDepartmentId("");
     setEditDateHired("");
     setEditDateOfBirth("");
     setEditPersonalEmail("");
@@ -159,9 +162,10 @@ export default function Directory() {
         bio: editBio || null,
       };
 
-      // Only admins can update manager_id
+      // Only admins can update manager_id and department_id
       if (isAdmin()) {
         updateData.manager_id = editManagerId || null;
+        updateData.department_id = editDepartmentId || null;
       }
 
       // Only HR/Super Admin can update sensitive fields
@@ -194,6 +198,7 @@ export default function Directory() {
           location: editLocation || null,
           bio: editBio || null,
           manager_id: isAdmin() ? (editManagerId || null) : prev.manager_id,
+          department_id: isAdmin() ? (editDepartmentId || null) : prev.department_id,
           ...(canViewSensitiveData() && {
             date_hired: editDateHired || null,
             date_of_birth: editDateOfBirth || null,
@@ -769,6 +774,25 @@ export default function Directory() {
                       rows={3}
                     />
                   </div>
+
+                  {/* Department selection - admin only */}
+                  {isAdmin() && (
+                    <div className="space-y-2">
+                      <Label>Department</Label>
+                      <Select value={editDepartmentId} onValueChange={setEditDepartmentId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {departments.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id}>
+                              {dept.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   {/* Manager selection - admin only */}
                   {isAdmin() && (
