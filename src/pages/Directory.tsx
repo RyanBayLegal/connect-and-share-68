@@ -54,6 +54,7 @@ export default function Directory() {
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [selectedEmployeeRoles, setSelectedEmployeeRoles] = useState<AppRole[]>([]);
+  const [selectedEmployeeDepts, setSelectedEmployeeDepts] = useState<{ department_id: string; is_primary: boolean }[]>([]);
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -64,7 +65,8 @@ export default function Directory() {
   const [editLocation, setEditLocation] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editManagerId, setEditManagerId] = useState<string | null>(null);
-  const [editDepartmentId, setEditDepartmentId] = useState<string>("");
+  const [editDepartmentIds, setEditDepartmentIds] = useState<string[]>([]);
+  const [editPrimaryDepartmentId, setEditPrimaryDepartmentId] = useState<string>("");
   const [editIsCeo, setEditIsCeo] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -116,6 +118,20 @@ export default function Directory() {
     } else {
       setSelectedEmployeeRoles([]);
     }
+
+    // Fetch department memberships
+    if (selectedEmployee) {
+      supabase
+        .from("profile_departments")
+        .select("department_id, is_primary")
+        .eq("profile_id", selectedEmployee.id)
+        .then(({ data }) => {
+          if (data) setSelectedEmployeeDepts(data as { department_id: string; is_primary: boolean }[]);
+          else setSelectedEmployeeDepts([]);
+        });
+    } else {
+      setSelectedEmployeeDepts([]);
+    }
   }, [selectedEmployee?.id]);
 
   // Check if current user can edit the selected employee's profile
@@ -142,7 +158,8 @@ export default function Directory() {
     setEditLocation(selectedEmployee.location || "");
     setEditBio(selectedEmployee.bio || "");
     setEditManagerId(selectedEmployee.manager_id || null);
-    setEditDepartmentId(selectedEmployee.department_id || "");
+    setEditDepartmentIds(selectedEmployeeDepts.map(d => d.department_id));
+    setEditPrimaryDepartmentId(selectedEmployeeDepts.find(d => d.is_primary)?.department_id || selectedEmployee.department_id || "");
     setEditIsCeo(selectedEmployee.is_ceo || false);
     // Sensitive fields (HR/Super Admin only)
     if (canViewSensitiveData()) {
@@ -177,7 +194,8 @@ export default function Directory() {
     setEditLocation("");
     setEditBio("");
     setEditManagerId(null);
-    setEditDepartmentId("");
+    setEditDepartmentIds([]);
+    setEditPrimaryDepartmentId("");
     setEditIsCeo(false);
     setEditDateHired("");
     setEditDateOfBirth("");
@@ -204,10 +222,10 @@ export default function Directory() {
         bio: editBio || null,
       };
 
-      // Only admins can update manager_id and department_id
+      // Only admins can update manager_id, department_id, and is_ceo
       if (isAdmin()) {
         updateData.manager_id = editManagerId || null;
-        updateData.department_id = editDepartmentId || null;
+        updateData.department_id = editPrimaryDepartmentId || null;
         updateData.is_ceo = editIsCeo;
       }
 
@@ -249,6 +267,27 @@ export default function Directory() {
         }
       }
 
+      // Save department memberships if admin
+      if (isAdmin()) {
+        // Delete existing memberships
+        await supabase
+          .from("profile_departments")
+          .delete()
+          .eq("profile_id", selectedEmployee.id);
+
+        // Insert new memberships
+        if (editDepartmentIds.length > 0) {
+          const { error: deptError } = await supabase
+            .from("profile_departments")
+            .insert(editDepartmentIds.map((deptId) => ({
+              profile_id: selectedEmployee.id,
+              department_id: deptId,
+              is_primary: deptId === editPrimaryDepartmentId,
+            })));
+          if (deptError) throw deptError;
+        }
+      }
+
       toast.success("Profile updated successfully!");
       
       // Refresh data and update selected employee
@@ -261,7 +300,7 @@ export default function Directory() {
           location: editLocation || null,
           bio: editBio || null,
           manager_id: isAdmin() ? (editManagerId || null) : prev.manager_id,
-          department_id: isAdmin() ? (editDepartmentId || null) : prev.department_id,
+          department_id: isAdmin() ? (editPrimaryDepartmentId || null) : prev.department_id,
           is_ceo: isAdmin() ? editIsCeo : prev.is_ceo,
           ...(canViewSensitiveData() && {
             date_hired: editDateHired || null,
@@ -837,11 +876,20 @@ export default function Directory() {
                       {selectedEmployee.job_title || "Employee"}
                     </p>
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      {selectedEmployee.department && (
+                      {selectedEmployeeDepts.length > 0 ? (
+                        selectedEmployeeDepts.map((pd) => {
+                          const dept = departments.find(d => d.id === pd.department_id);
+                          return dept ? (
+                            <Badge key={dept.id} variant={pd.is_primary ? "default" : "secondary"}>
+                              {dept.name}{pd.is_primary && selectedEmployeeDepts.length > 1 ? " ★" : ""}
+                            </Badge>
+                          ) : null;
+                        })
+                      ) : selectedEmployee.department ? (
                         <Badge variant="secondary">
                           {selectedEmployee.department.name}
                         </Badge>
-                      )}
+                      ) : null}
                       {!selectedEmployee.is_active && (
                         <Badge variant="destructive" className="gap-1">
                           <UserX className="h-3 w-3" />
@@ -934,20 +982,52 @@ export default function Directory() {
 
                   {/* Department selection - admin only */}
                   {isAdmin() && (
-                    <div className="space-y-2">
-                      <Label>Department</Label>
-                      <Select value={editDepartmentId} onValueChange={setEditDepartmentId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {departments.map((dept) => (
-                            <SelectItem key={dept.id} value={dept.id}>
+                    <div className="space-y-3">
+                      <Label>Departments</Label>
+                      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                        {departments.map((dept) => (
+                          <div key={dept.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`dept-${dept.id}`}
+                              checked={editDepartmentIds.includes(dept.id)}
+                              onCheckedChange={(checked) => {
+                                setEditDepartmentIds((prev) =>
+                                  checked
+                                    ? [...prev, dept.id]
+                                    : prev.filter((id) => id !== dept.id)
+                                );
+                                // If unchecking primary, clear it
+                                if (!checked && editPrimaryDepartmentId === dept.id) {
+                                  setEditPrimaryDepartmentId("");
+                                }
+                              }}
+                            />
+                            <label htmlFor={`dept-${dept.id}`} className="text-sm cursor-pointer">
                               {dept.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      {editDepartmentIds.length > 0 && (
+                        <div className="space-y-2">
+                          <Label>Primary Department</Label>
+                          <Select value={editPrimaryDepartmentId} onValueChange={setEditPrimaryDepartmentId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select primary department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {editDepartmentIds.map((deptId) => {
+                                const dept = departments.find(d => d.id === deptId);
+                                return dept ? (
+                                  <SelectItem key={dept.id} value={dept.id}>
+                                    {dept.name}
+                                  </SelectItem>
+                                ) : null;
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                   )}
 
