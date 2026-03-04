@@ -31,15 +31,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus, Pencil, X, Save, Users, ChevronRight, Calendar, Cake, Lock, UserX, UserCheck, LogOut } from "lucide-react";
+import { Search, Mail, Phone, MapPin, Building2, User, Network, MessageSquare, LayoutGrid, List, Crown, Camera, Loader2, Plus, Pencil, X, Save, Users, ChevronRight, Calendar, Cake, Lock, UserX, UserCheck, LogOut, Shield } from "lucide-react";
 import { format } from "date-fns";
-import type { Profile, Department } from "@/types/database";
+import type { Profile, Department, AppRole } from "@/types/database";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ROLE_LABELS } from "@/lib/constants";
 import { OrgChart } from "@/components/directory/OrgChart";
 import { AddMemberDialog } from "@/components/directory/AddMemberDialog";
 import { ManagerSelect } from "@/components/directory/ManagerSelect";
 
 export default function Directory() {
-  const { user, isAdmin, canViewSensitiveData } = useAuth();
+  const { user, isAdmin, isSuperAdmin, canViewSensitiveData } = useAuth();
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,6 +53,7 @@ export default function Directory() {
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [selectedEmployeeRoles, setSelectedEmployeeRoles] = useState<AppRole[]>([]);
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -75,7 +78,7 @@ export default function Directory() {
   const [editEmergencyContactName, setEditEmergencyContactName] = useState("");
   const [editEmergencyContactPhone, setEditEmergencyContactPhone] = useState("");
   const [editEmergencyContactRelationship, setEditEmergencyContactRelationship] = useState("");
-
+  const [editRoles, setEditRoles] = useState<AppRole[]>([]);
   const fetchData = async () => {
     try {
       const [{ data: employeesData }, { data: departmentsData }] = await Promise.all([
@@ -98,6 +101,22 @@ export default function Directory() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Fetch roles when viewing an employee (for admins)
+  useEffect(() => {
+    if (selectedEmployee && isSuperAdmin()) {
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", selectedEmployee.user_id)
+        .then(({ data }) => {
+          if (data) setSelectedEmployeeRoles(data.map((r) => r.role as AppRole));
+          else setSelectedEmployeeRoles([]);
+        });
+    } else {
+      setSelectedEmployeeRoles([]);
+    }
+  }, [selectedEmployee?.id]);
 
   // Check if current user can edit the selected employee's profile
   const canEditProfile = (employee: Profile) => {
@@ -135,6 +154,16 @@ export default function Directory() {
       setEditEmergencyContactPhone(selectedEmployee.emergency_contact_phone || "");
       setEditEmergencyContactRelationship(selectedEmployee.emergency_contact_relationship || "");
     }
+    // Fetch user roles if super admin
+    if (isSuperAdmin()) {
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", selectedEmployee.user_id)
+        .then(({ data }) => {
+          if (data) setEditRoles(data.map((r) => r.role as AppRole));
+        });
+    }
     setIsEditMode(true);
   };
 
@@ -157,6 +186,7 @@ export default function Directory() {
     setEditEmergencyContactName("");
     setEditEmergencyContactPhone("");
     setEditEmergencyContactRelationship("");
+    setEditRoles([]);
   };
 
   // Save profile changes
@@ -198,6 +228,26 @@ export default function Directory() {
         .eq("id", selectedEmployee.id);
 
       if (error) throw error;
+
+      // Save roles if super admin
+      if (isSuperAdmin()) {
+        // Delete existing roles
+        await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", selectedEmployee.user_id);
+
+        // Insert new roles
+        if (editRoles.length > 0) {
+          const { error: rolesError } = await supabase
+            .from("user_roles")
+            .insert(editRoles.map((role) => ({
+              user_id: selectedEmployee.user_id,
+              role,
+            })));
+          if (rolesError) throw rolesError;
+        }
+      }
 
       toast.success("Profile updated successfully!");
       
@@ -804,6 +854,12 @@ export default function Directory() {
                           Active
                         </Badge>
                       )}
+                      {selectedEmployeeRoles.map((role) => (
+                        <Badge key={role} variant="outline" className="gap-1">
+                          <Shield className="h-3 w-3" />
+                          {ROLE_LABELS[role]}
+                        </Badge>
+                      ))}
                     </div>
                   </>
                 )}
@@ -926,7 +982,39 @@ export default function Directory() {
                     </div>
                   )}
 
-                  {/* Sensitive fields - HR/Super Admin only */}
+                  {/* Role management - Super Admin only */}
+                  {isSuperAdmin() && (
+                    <div className="border-t pt-4 mt-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-muted-foreground">User Roles</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(Object.keys(ROLE_LABELS) as AppRole[]).map((role) => (
+                          <div key={role} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`role-${role}`}
+                              checked={editRoles.includes(role)}
+                              onCheckedChange={(checked) => {
+                                setEditRoles((prev) =>
+                                  checked
+                                    ? [...prev, role]
+                                    : prev.filter((r) => r !== role)
+                                );
+                              }}
+                            />
+                            <label
+                              htmlFor={`role-${role}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {ROLE_LABELS[role]}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {canViewSensitiveData() && (
                     <>
                       <div className="border-t pt-4 mt-4">
