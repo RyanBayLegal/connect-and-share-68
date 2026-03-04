@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -59,6 +60,7 @@ export default function Directory() {
   const [editBio, setEditBio] = useState("");
   const [editManagerId, setEditManagerId] = useState<string | null>(null);
   const [editDepartmentId, setEditDepartmentId] = useState<string>("");
+  const [editIsCeo, setEditIsCeo] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
   // Sensitive fields (HR/Super Admin only)
@@ -118,6 +120,7 @@ export default function Directory() {
     setEditBio(selectedEmployee.bio || "");
     setEditManagerId(selectedEmployee.manager_id || null);
     setEditDepartmentId(selectedEmployee.department_id || "");
+    setEditIsCeo(selectedEmployee.is_ceo || false);
     // Sensitive fields (HR/Super Admin only)
     if (canViewSensitiveData()) {
       setEditDateHired(selectedEmployee.date_hired || "");
@@ -140,6 +143,7 @@ export default function Directory() {
     setEditBio("");
     setEditManagerId(null);
     setEditDepartmentId("");
+    setEditIsCeo(false);
     setEditDateHired("");
     setEditDateOfBirth("");
     setEditPersonalEmail("");
@@ -166,6 +170,7 @@ export default function Directory() {
       if (isAdmin()) {
         updateData.manager_id = editManagerId || null;
         updateData.department_id = editDepartmentId || null;
+        updateData.is_ceo = editIsCeo;
       }
 
       // Only HR/Super Admin can update sensitive fields
@@ -199,6 +204,7 @@ export default function Directory() {
           bio: editBio || null,
           manager_id: isAdmin() ? (editManagerId || null) : prev.manager_id,
           department_id: isAdmin() ? (editDepartmentId || null) : prev.department_id,
+          is_ceo: isAdmin() ? editIsCeo : prev.is_ceo,
           ...(canViewSensitiveData() && {
             date_hired: editDateHired || null,
             date_of_birth: editDateOfBirth || null,
@@ -868,6 +874,23 @@ export default function Directory() {
                         employees={employees}
                         excludeId={selectedEmployee.id}
                         placeholder="Select manager"
+                      />
+                    </div>
+                  )}
+
+                  {/* CEO/Owner toggle - admin only */}
+                  {isAdmin() && (
+                    <div className="flex items-center justify-between p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                      <div className="flex items-center gap-2">
+                        <Crown className="h-4 w-4 text-amber-500" />
+                        <div>
+                          <Label className="text-sm font-medium">Owner / CEO</Label>
+                          <p className="text-xs text-muted-foreground">This person will appear at the top of the org chart</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={editIsCeo}
+                        onCheckedChange={setEditIsCeo}
                       />
                     </div>
                   )}

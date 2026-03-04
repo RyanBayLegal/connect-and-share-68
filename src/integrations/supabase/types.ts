@@ -1105,6 +1105,7 @@ export type Database = {
           first_name: string
           id: string
           is_active: boolean
+          is_ceo: boolean
           job_title: string | null
           last_name: string
           location: string | null
@@ -1130,6 +1131,7 @@ export type Database = {
           first_name: string
           id?: string
           is_active?: boolean
+          is_ceo?: boolean
           job_title?: string | null
           last_name: string
           location?: string | null
@@ -1155,6 +1157,7 @@ export type Database = {
           first_name?: string
           id?: string
           is_active?: boolean
+          is_ceo?: boolean
           job_title?: string | null
           last_name?: string
           location?: string | null
