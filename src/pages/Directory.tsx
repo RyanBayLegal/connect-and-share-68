@@ -54,6 +54,8 @@ export default function Directory() {
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
   const [editJobTitle, setEditJobTitle] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editLocation, setEditLocation] = useState("");
@@ -114,6 +116,8 @@ export default function Directory() {
   // Enter edit mode with current values
   const enterEditMode = () => {
     if (!selectedEmployee) return;
+    setEditFirstName(selectedEmployee.first_name);
+    setEditLastName(selectedEmployee.last_name);
     setEditJobTitle(selectedEmployee.job_title || "");
     setEditPhone(selectedEmployee.phone || "");
     setEditLocation(selectedEmployee.location || "");
@@ -137,6 +141,8 @@ export default function Directory() {
   // Cancel edit mode
   const cancelEditMode = () => {
     setIsEditMode(false);
+    setEditFirstName("");
+    setEditLastName("");
     setEditJobTitle("");
     setEditPhone("");
     setEditLocation("");
@@ -160,6 +166,8 @@ export default function Directory() {
     setIsSaving(true);
     try {
       const updateData: Record<string, any> = {
+        first_name: editFirstName,
+        last_name: editLastName,
         job_title: editJobTitle || null,
         phone: editPhone || null,
         location: editLocation || null,
@@ -804,6 +812,29 @@ export default function Directory() {
               {isEditMode ? (
                 /* Edit Mode Form */
                 <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-first-name">First Name</Label>
+                      <Input
+                        id="edit-first-name"
+                        value={editFirstName}
+                        onChange={(e) => setEditFirstName(e.target.value)}
+                        placeholder="First name"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-last-name">Last Name</Label>
+                      <Input
+                        id="edit-last-name"
+                        value={editLastName}
+                        onChange={(e) => setEditLastName(e.target.value)}
+                        placeholder="Last name"
+                        required
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="edit-job-title">Job Title</Label>
                     <Input
