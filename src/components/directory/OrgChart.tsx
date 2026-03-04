@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, User } from "lucide-react";
+import { ChevronDown, ChevronRight, User, Crown } from "lucide-react";
 import type { Profile, Department } from "@/types/database";
 import { cn } from "@/lib/utils";
 
@@ -25,9 +24,15 @@ export function OrgChart({ employees }: OrgChartProps) {
   }, [employees]);
 
   const buildTree = () => {
-    // Find employees without managers (top level)
-    const roots = employees.filter((e) => !e.manager_id);
+    // CEO/Owner always at top, then employees without managers
+    const ceos = employees.filter((e) => e.is_ceo);
+    const ceoIds = new Set(ceos.map((c) => c.id));
     
+    // Non-CEO roots: employees without managers who aren't already a CEO
+    const otherRoots = employees.filter(
+      (e) => !e.manager_id && !ceoIds.has(e.id)
+    );
+
     const buildNode = (employee: Profile): OrgNode => {
       const children = employees
         .filter((e) => e.manager_id === employee.id)
@@ -35,9 +40,13 @@ export function OrgChart({ employees }: OrgChartProps) {
       return { ...employee, children };
     };
 
-    const treeNodes = roots.map(buildNode);
-    setTree(treeNodes);
+    // Build CEO nodes first, then other roots
+    const ceoNodes = ceos.map(buildNode);
+    const otherNodes = otherRoots.map(buildNode);
+    const treeNodes = [...ceoNodes, ...otherNodes];
     
+    setTree(treeNodes);
+
     // Expand first two levels by default
     const expanded = new Set<string>();
     treeNodes.forEach((node) => {
@@ -99,13 +108,15 @@ function OrgNodeComponent({
 }) {
   const isExpanded = expandedNodes.has(node.id);
   const hasChildren = node.children.length > 0;
+  const isCeo = node.is_ceo;
 
   return (
     <div style={{ marginLeft: level * 24 }}>
       <Card
         className={cn(
           "cursor-pointer hover:shadow-md transition-shadow",
-          level === 0 && "border-primary/50"
+          isCeo && "border-amber-500/50 bg-amber-500/5",
+          !isCeo && level === 0 && "border-primary/50"
         )}
         onClick={() => hasChildren && onToggle(node.id)}
       >
@@ -122,19 +133,30 @@ function OrgNodeComponent({
             ) : (
               <div className="w-6" />
             )}
-            
-            <Avatar className="h-12 w-12">
+
+            <Avatar className={cn("h-12 w-12", isCeo && "ring-2 ring-amber-500")}>
               <AvatarImage src={node.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
+              <AvatarFallback className={cn(
+                "text-primary-foreground",
+                isCeo ? "bg-amber-500" : "bg-primary"
+              )}>
                 {node.first_name[0]}
                 {node.last_name[0]}
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold">
-                {node.first_name} {node.last_name}
-              </h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold">
+                  {node.first_name} {node.last_name}
+                </h4>
+                {isCeo && (
+                  <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30 gap-1">
+                    <Crown className="h-3 w-3" />
+                    Owner / CEO
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 {node.job_title || "Employee"}
               </p>
