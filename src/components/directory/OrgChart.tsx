@@ -24,13 +24,15 @@ export function OrgChart({ employees }: OrgChartProps) {
   }, [employees]);
 
   const buildTree = () => {
-    // CEO/Owner always at top, then employees without managers
+    const employeeIds = new Set(employees.map((e) => e.id));
+    
+    // CEO/Owner always at top
     const ceos = employees.filter((e) => e.is_ceo);
     const ceoIds = new Set(ceos.map((c) => c.id));
     
-    // Non-CEO roots: employees without managers who aren't already a CEO
+    // Non-CEO roots: employees without managers, OR whose manager isn't in the current list
     const otherRoots = employees.filter(
-      (e) => !e.manager_id && !ceoIds.has(e.id)
+      (e) => !ceoIds.has(e.id) && (!e.manager_id || !employeeIds.has(e.manager_id))
     );
 
     const buildNode = (employee: Profile): OrgNode => {
