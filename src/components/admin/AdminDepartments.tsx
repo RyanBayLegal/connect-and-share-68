@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Users } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Pencil, Users, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import type { Department, Profile } from "@/types/database";
 import { ManagerSelect } from "@/components/directory/ManagerSelect";
@@ -26,6 +27,7 @@ export function AdminDepartments() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [managerId, setManagerId] = useState<string | null>(null);
+  const [parentId, setParentId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -45,7 +47,6 @@ export function AdminDepartments() {
     const deptsRaw = (deptData || []) as any[];
     const profilesRaw = (profileData || []) as unknown as Profile[];
 
-    // Map manager info to departments
     const deptsWithManagers: DepartmentWithManager[] = deptsRaw.map((dept) => {
       const manager = dept.manager_id
         ? profilesRaw.find((p) => p.id === dept.manager_id) || null
@@ -63,17 +64,18 @@ export function AdminDepartments() {
     setIsSubmitting(true);
 
     try {
+      const payload = { name, description, manager_id: managerId, parent_id: parentId };
       if (editingId) {
         const { error } = await supabase
           .from("departments")
-          .update({ name, description, manager_id: managerId })
+          .update(payload)
           .eq("id", editingId);
         if (error) throw error;
         toast.success("Department updated!");
       } else {
         const { error } = await supabase
           .from("departments")
-          .insert({ name, description, manager_id: managerId });
+          .insert(payload);
         if (error) throw error;
         toast.success("Department created!");
       }
@@ -91,6 +93,7 @@ export function AdminDepartments() {
     setName("");
     setDescription("");
     setManagerId(null);
+    setParentId(null);
     setEditingId(null);
   };
 
@@ -99,6 +102,7 @@ export function AdminDepartments() {
     setName(dept.name);
     setDescription(dept.description || "");
     setManagerId(dept.manager?.id || null);
+    setParentId(dept.parent_id || null);
     setIsOpen(true);
   };
 
@@ -111,6 +115,32 @@ export function AdminDepartments() {
     return employees.filter((e) => e.department_id === deptId).length;
   };
 
+  const getParentName = (parentId: string | null | undefined) => {
+    if (!parentId) return null;
+    const parent = departments.find(d => d.id === parentId);
+    return parent?.name || null;
+  };
+
+  // Build hierarchical display: indent children under parents
+  const getHierarchicalDepts = () => {
+    const roots = departments.filter(d => !d.parent_id);
+    const children = departments.filter(d => d.parent_id);
+    const result: { dept: DepartmentWithManager; level: number }[] = [];
+    
+    const addWithChildren = (dept: DepartmentWithManager, level: number) => {
+      result.push({ dept, level });
+      const kids = children.filter(c => c.parent_id === dept.id);
+      kids.forEach(kid => addWithChildren(kid, level + 1));
+    };
+    
+    roots.forEach(r => addWithChildren(r, 0));
+    // Add any orphans (parent not found)
+    const addedIds = new Set(result.map(r => r.dept.id));
+    children.filter(c => !addedIds.has(c.id)).forEach(c => result.push({ dept: c, level: 0 }));
+    
+    return result;
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center p-8">
@@ -118,6 +148,8 @@ export function AdminDepartments() {
       </div>
     );
   }
+
+  const hierarchicalDepts = getHierarchicalDepts();
 
   return (
     <Card>
@@ -150,6 +182,27 @@ export function AdminDepartments() {
                 <Input value={description} onChange={(e) => setDescription(e.target.value)} />
               </div>
               <div className="space-y-2">
+                <Label>Parent Department</Label>
+                <Select 
+                  value={parentId || "none"} 
+                  onValueChange={(val) => setParentId(val === "none" ? null : val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None (top-level)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None (top-level)</SelectItem>
+                    {departments
+                      .filter(d => d.id !== editingId) // prevent self-reference
+                      .map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>Department Manager</Label>
                 <ManagerSelect
                   value={managerId}
@@ -175,6 +228,7 @@ export function AdminDepartments() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Parent</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Members</TableHead>
               <TableHead>Manager</TableHead>
@@ -182,9 +236,19 @@ export function AdminDepartments() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {departments.map((dept) => (
+            {hierarchicalDepts.map(({ dept, level }) => (
               <TableRow key={dept.id}>
-                <TableCell className="font-medium">{dept.name}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-1" style={{ paddingLeft: `${level * 20}px` }}>
+                    {level > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+                    {dept.name}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {getParentName(dept.parent_id) || (
+                    <span className="text-muted-foreground text-sm">—</span>
+                  )}
+                </TableCell>
                 <TableCell>{dept.description || "-"}</TableCell>
                 <TableCell>
                   <Badge variant="secondary" className="gap-1">

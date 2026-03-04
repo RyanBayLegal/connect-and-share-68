@@ -5,6 +5,7 @@ export interface Department {
   name: string;
   description: string | null;
   manager_id: string | null;
+  parent_id: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -332,6 +332,7 @@ export type Database = {
           id: string
           manager_id: string | null
           name: string
+          parent_id: string | null
           updated_at: string
         }
         Insert: {
@@ -340,6 +341,7 @@ export type Database = {
           id?: string
           manager_id?: string | null
           name: string
+          parent_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -348,6 +350,7 @@ export type Database = {
           id?: string
           manager_id?: string | null
           name?: string
+          parent_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -356,6 +359,13 @@ export type Database = {
             columns: ["manager_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
         ]
@@ -1085,6 +1095,45 @@ export type Database = {
             foreignKeyName: "payroll_settings_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_departments: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          is_primary: boolean
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          is_primary?: boolean
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          is_primary?: boolean
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_departments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
