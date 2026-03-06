@@ -86,7 +86,7 @@ export function TopNav() {
             )}
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-black text-foreground tracking-tighter leading-none">{branding.company_name?.toUpperCase() || "BAY LEGAL"}</span>
+            <span className="text-lg font-black text-foreground tracking-tighter leading-none">{branding.company_name || "Bay Legal, PC"}</span>
             <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] leading-none mt-0.5">{branding.company_slogan || "Professional Corp"}</span>
           </div>
         </NavLink>
