@@ -265,7 +265,7 @@ export default function Announcements() {
                     {PRIORITIES[selectedAnnouncement.priority].label}
                   </Badge>
                   {selectedAnnouncement.target_department_id && (
-                    <Badge variant="outline" className="text-sky-400 border-sky-500/30">Department</Badge>
+                    <Badge variant="outline" className="text-primary border-primary/30">Department</Badge>
                   )}
                   {!selectedAnnouncement.target_department_id && (
                     <Badge variant="outline">Global</Badge>
