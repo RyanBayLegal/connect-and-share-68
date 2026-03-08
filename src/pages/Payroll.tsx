@@ -656,7 +656,6 @@ export default function Payroll() {
             <Receipt className="h-4 w-4 mr-2" />
             Deductions
           </TabsTrigger>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="employees">
