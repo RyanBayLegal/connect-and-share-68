@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { z } from "zod";
 import { useBranding } from "@/hooks/useBranding";
+import { ForgotPasswordDialog } from "@/components/ForgotPasswordDialog";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -143,7 +144,11 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+          <div className="mt-4 text-center">
+            <ForgotPasswordDialog />
+          </div>
+
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             Don't have an account? Contact your administrator to get access.
           </p>
         </CardContent>
