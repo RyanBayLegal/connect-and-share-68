@@ -59,8 +59,14 @@ export default function Payroll() {
   const [runPeriodEnd, setRunPeriodEnd] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
   const [runPayDate, setRunPayDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  // Pay stub viewer and PDF
+  // Pay stub viewer, editor and PDF
   const [viewingPayStub, setViewingPayStub] = useState<(PayStub & { employee?: Profile }) | null>(null);
+  const [editingPayStub, setEditingPayStub] = useState<(PayStub & { employee?: Profile }) | null>(null);
+  const [editGrossPay, setEditGrossPay] = useState("");
+  const [editNetPay, setEditNetPay] = useState("");
+  const [editRegularHours, setEditRegularHours] = useState("");
+  const [editOvertimeHours, setEditOvertimeHours] = useState("");
+  const [editPtoHours, setEditPtoHours] = useState("");
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const payStubRef = useRef<HTMLDivElement>(null);
 
