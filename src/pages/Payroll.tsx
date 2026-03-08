@@ -26,7 +26,22 @@ export default function Payroll() {
   const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>([]);
   const [payStubs, setPayStubs] = useState<(PayStub & { employee?: Profile })[]>([]);
   const [deductionTypes, setDeductionTypes] = useState<PayrollDeductionType[]>([]);
+  const [employeeDeductions, setEmployeeDeductions] = useState<(EmployeeDeduction & { deduction_type?: PayrollDeductionType })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Deduction type form
+  const [dedTypeDialogOpen, setDedTypeDialogOpen] = useState(false);
+  const [editingDedType, setEditingDedType] = useState<PayrollDeductionType | null>(null);
+  const [dedTypeName, setDedTypeName] = useState("");
+  const [dedTypeDescription, setDedTypeDescription] = useState("");
+  const [dedTypeIsPercentage, setDedTypeIsPercentage] = useState(false);
+  const [dedTypeDefaultAmount, setDedTypeDefaultAmount] = useState("");
+
+  // Employee deduction assignment
+  const [empDedDialogOpen, setEmpDedDialogOpen] = useState(false);
+  const [empDedEmployee, setEmpDedEmployee] = useState("");
+  const [empDedType, setEmpDedType] = useState("");
+  const [empDedAmount, setEmpDedAmount] = useState("");
 
   // Payroll settings form
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
