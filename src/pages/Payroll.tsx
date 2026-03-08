@@ -1116,6 +1116,49 @@ export default function Payroll() {
               )}
             </DialogContent>
           </Dialog>
+
+          {/* Edit Pay Stub Dialog */}
+          <Dialog open={!!editingPayStub} onOpenChange={() => setEditingPayStub(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  Edit Pay Stub: {editingPayStub?.employee?.first_name} {editingPayStub?.employee?.last_name}
+                </DialogTitle>
+                <DialogDescription>
+                  Adjust hours and pay amounts for this pay stub
+                </DialogDescription>
+              </DialogHeader>
+              {editingPayStub && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-2">
+                      <Label>Regular Hours</Label>
+                      <Input type="number" step="0.01" value={editRegularHours} onChange={(e) => setEditRegularHours(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>OT Hours</Label>
+                      <Input type="number" step="0.01" value={editOvertimeHours} onChange={(e) => setEditOvertimeHours(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>PTO Hours</Label>
+                      <Input type="number" step="0.01" value={editPtoHours} onChange={(e) => setEditPtoHours(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Gross Pay ($)</Label>
+                      <Input type="number" step="0.01" value={editGrossPay} onChange={(e) => setEditGrossPay(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Net Pay ($)</Label>
+                      <Input type="number" step="0.01" value={editNetPay} onChange={(e) => setEditNetPay(e.target.value)} />
+                    </div>
+                  </div>
+                  <Button onClick={handleSavePayStub} className="w-full">Save Changes</Button>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
         <TabsContent value="deductions" className="space-y-6">
           {/* Deduction Types Management */}
