@@ -316,7 +316,7 @@ export default function TimeManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{workingCount}</div>
+            <div className="text-2xl font-bold text-primary">{workingCount}</div>
           </CardContent>
         </Card>
         <Card>
