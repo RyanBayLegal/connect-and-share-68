@@ -55,6 +55,7 @@ const hrLinks = [
 const resourceLinks = [
   { title: "My HR", url: "/my-hr", icon: UserCog, description: "Pay stubs, leave & PTO" },
   { title: "Directory", url: "/directory", icon: Users, description: "Find team members" },
+  { title: "Department Hub", url: "/department", icon: LayoutGrid, description: "Your department" },
   { title: "Documents", url: "/documents", icon: FileText, description: "Files & resources" },
   { title: "Tasks", url: "/tasks", icon: ListTodo, description: "Projects & assignments" },
   { title: "Messages", url: "/messages", icon: MessageSquare, description: "Team communication" },
