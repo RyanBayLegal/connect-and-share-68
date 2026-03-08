@@ -12,7 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Users, Calendar, FileText, Plus, Edit2, Download, Play, CheckCircle, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { DollarSign, Users, Calendar, FileText, Plus, Edit2, Download, Play, CheckCircle, Loader2, Trash2, Receipt } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import html2pdf from "html2pdf.js";
 import type { Profile, PayrollSettings, PayrollRun, PayStub, PayrollDeductionType, EmployeeDeduction } from "@/types/database";
@@ -24,7 +26,22 @@ export default function Payroll() {
   const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>([]);
   const [payStubs, setPayStubs] = useState<(PayStub & { employee?: Profile })[]>([]);
   const [deductionTypes, setDeductionTypes] = useState<PayrollDeductionType[]>([]);
+  const [employeeDeductions, setEmployeeDeductions] = useState<(EmployeeDeduction & { deduction_type?: PayrollDeductionType })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Deduction type form
+  const [dedTypeDialogOpen, setDedTypeDialogOpen] = useState(false);
+  const [editingDedType, setEditingDedType] = useState<PayrollDeductionType | null>(null);
+  const [dedTypeName, setDedTypeName] = useState("");
+  const [dedTypeDescription, setDedTypeDescription] = useState("");
+  const [dedTypeIsPercentage, setDedTypeIsPercentage] = useState(false);
+  const [dedTypeDefaultAmount, setDedTypeDefaultAmount] = useState("");
+
+  // Employee deduction assignment
+  const [empDedDialogOpen, setEmpDedDialogOpen] = useState(false);
+  const [empDedEmployee, setEmpDedEmployee] = useState("");
+  const [empDedType, setEmpDedType] = useState("");
+  const [empDedAmount, setEmpDedAmount] = useState("");
 
   // Payroll settings form
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
@@ -106,20 +123,112 @@ export default function Payroll() {
         setPayStubs(stubsWithEmployees);
       }
 
-      // Fetch deduction types
-      const { data: deductionData } = await supabase
+      // Fetch all deduction types (including inactive for management)
+      const { data: allDedTypes } = await supabase
         .from("payroll_deduction_types")
         .select("*")
-        .eq("is_active", true);
+        .order("name");
+      if (allDedTypes) {
+        setDeductionTypes(allDedTypes as PayrollDeductionType[]);
+      }
 
-      if (deductionData) {
-        setDeductionTypes(deductionData as PayrollDeductionType[]);
+      // Fetch employee deductions with type info
+      const { data: empDedData } = await supabase
+        .from("employee_deductions")
+        .select("*, deduction_type:payroll_deduction_types(*)")
+        .order("created_at", { ascending: false });
+      if (empDedData) {
+        setEmployeeDeductions(empDedData.map((d) => ({
+          ...(d as unknown as EmployeeDeduction),
+          deduction_type: d.deduction_type as unknown as PayrollDeductionType,
+        })));
       }
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Deduction type CRUD
+  const openDedTypeForm = (dedType?: PayrollDeductionType) => {
+    setEditingDedType(dedType || null);
+    setDedTypeName(dedType?.name || "");
+    setDedTypeDescription(dedType?.description || "");
+    setDedTypeIsPercentage(dedType?.is_percentage || false);
+    setDedTypeDefaultAmount(dedType?.default_amount?.toString() || "");
+    setDedTypeDialogOpen(true);
+  };
+
+  const handleSaveDedType = async () => {
+    if (!dedTypeName.trim()) return;
+    try {
+      const data = {
+        name: dedTypeName.trim(),
+        description: dedTypeDescription.trim() || null,
+        is_percentage: dedTypeIsPercentage,
+        default_amount: dedTypeDefaultAmount ? parseFloat(dedTypeDefaultAmount) : null,
+      };
+      if (editingDedType) {
+        await supabase.from("payroll_deduction_types").update(data).eq("id", editingDedType.id);
+      } else {
+        await supabase.from("payroll_deduction_types").insert(data);
+      }
+      toast({ title: `Deduction type ${editingDedType ? "updated" : "created"}!` });
+      setDedTypeDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({ title: "Error saving deduction type", variant: "destructive" });
+    }
+  };
+
+  const handleToggleDedType = async (id: string, isActive: boolean) => {
+    await supabase.from("payroll_deduction_types").update({ is_active: !isActive }).eq("id", id);
+    fetchData();
+  };
+
+  const handleDeleteDedType = async (id: string) => {
+    // Check if in use
+    const { data: inUse } = await supabase.from("employee_deductions").select("id").eq("deduction_type_id", id).limit(1);
+    if (inUse && inUse.length > 0) {
+      toast({ title: "Cannot delete — deduction type is assigned to employees. Deactivate it instead.", variant: "destructive" });
+      return;
+    }
+    await supabase.from("payroll_deduction_types").delete().eq("id", id);
+    toast({ title: "Deduction type deleted" });
+    fetchData();
+  };
+
+  // Employee deduction assignment
+  const handleAssignDeduction = async () => {
+    if (!empDedEmployee || !empDedType || !empDedAmount) return;
+    try {
+      await supabase.from("employee_deductions").insert({
+        employee_id: empDedEmployee,
+        deduction_type_id: empDedType,
+        amount: parseFloat(empDedAmount),
+        is_active: true,
+      });
+      toast({ title: "Deduction assigned to employee!" });
+      setEmpDedDialogOpen(false);
+      setEmpDedEmployee("");
+      setEmpDedType("");
+      setEmpDedAmount("");
+      fetchData();
+    } catch (error) {
+      toast({ title: "Error assigning deduction", variant: "destructive" });
+    }
+  };
+
+  const handleToggleEmpDeduction = async (id: string, isActive: boolean) => {
+    await supabase.from("employee_deductions").update({ is_active: !isActive }).eq("id", id);
+    fetchData();
+  };
+
+  const handleDeleteEmpDeduction = async (id: string) => {
+    await supabase.from("employee_deductions").delete().eq("id", id);
+    toast({ title: "Employee deduction removed" });
+    fetchData();
   };
 
   const handleSavePayrollSettings = async () => {
@@ -532,6 +641,10 @@ export default function Payroll() {
           <TabsTrigger value="stubs">
             <FileText className="h-4 w-4 mr-2" />
             Pay Stubs
+          </TabsTrigger>
+          <TabsTrigger value="deductions">
+            <Receipt className="h-4 w-4 mr-2" />
+            Deductions
           </TabsTrigger>
         </TabsList>
 
@@ -957,6 +1070,200 @@ export default function Payroll() {
             </DialogContent>
           </Dialog>
         </TabsContent>
+        <TabsContent value="deductions" className="space-y-6">
+          {/* Deduction Types Management */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Deduction Types</CardTitle>
+                <CardDescription>Manage tax and benefit deduction categories (e.g., Federal Tax, State Tax, Health Insurance, 401k)</CardDescription>
+              </div>
+              <Button onClick={() => openDedTypeForm()}>
+                <Plus className="h-4 w-4 mr-2" /> Add Type
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {deductionTypes.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Default</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {deductionTypes.map((dt) => (
+                      <TableRow key={dt.id} className={!dt.is_active ? "opacity-50" : ""}>
+                        <TableCell className="font-medium">{dt.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{dt.description || "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{dt.is_percentage ? "Percentage" : "Fixed Amount"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {dt.default_amount != null ? (dt.is_percentage ? `${dt.default_amount}%` : `$${dt.default_amount}`) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Switch checked={dt.is_active} onCheckedChange={() => handleToggleDedType(dt.id, dt.is_active)} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => openDedTypeForm(dt)}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteDedType(dt.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No deduction types configured. Add types like Federal Tax, State Tax, Health Insurance, 401(k), etc.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Deduction Type Dialog */}
+          <Dialog open={dedTypeDialogOpen} onOpenChange={setDedTypeDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>{editingDedType ? "Edit" : "Add"} Deduction Type</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input value={dedTypeName} onChange={(e) => setDedTypeName(e.target.value)} placeholder="e.g., Federal Income Tax" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Input value={dedTypeDescription} onChange={(e) => setDedTypeDescription(e.target.value)} placeholder="Optional description" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Checkbox id="isPercentage" checked={dedTypeIsPercentage} onCheckedChange={(v) => setDedTypeIsPercentage(v === true)} />
+                  <Label htmlFor="isPercentage">Calculate as percentage of gross pay</Label>
+                </div>
+                <div className="space-y-2">
+                  <Label>Default Amount {dedTypeIsPercentage ? "(%)" : "($)"}</Label>
+                  <Input type="number" step="0.01" value={dedTypeDefaultAmount} onChange={(e) => setDedTypeDefaultAmount(e.target.value)} placeholder={dedTypeIsPercentage ? "22" : "100"} />
+                </div>
+                <Button onClick={handleSaveDedType} className="w-full">{editingDedType ? "Update" : "Create"} Deduction Type</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Employee Deductions */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Employee Deductions</CardTitle>
+                <CardDescription>Assign deduction types to individual employees</CardDescription>
+              </div>
+              <Button onClick={() => setEmpDedDialogOpen(true)} disabled={deductionTypes.filter((d) => d.is_active).length === 0}>
+                <Plus className="h-4 w-4 mr-2" /> Assign Deduction
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {employeeDeductions.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Employee</TableHead>
+                      <TableHead>Deduction</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Active</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {employeeDeductions.map((ed) => {
+                      const emp = employees.find((e) => e.id === ed.employee_id);
+                      return (
+                        <TableRow key={ed.id} className={!ed.is_active ? "opacity-50" : ""}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7">
+                                <AvatarImage src={emp?.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs">{emp?.first_name?.[0]}{emp?.last_name?.[0]}</AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm">{emp?.first_name} {emp?.last_name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{ed.deduction_type?.name || "Unknown"}</TableCell>
+                          <TableCell>
+                            {ed.deduction_type?.is_percentage ? `${ed.amount}%` : `$${ed.amount.toFixed(2)}`}
+                          </TableCell>
+                          <TableCell>
+                            <Switch checked={ed.is_active} onCheckedChange={() => handleToggleEmpDeduction(ed.id, ed.is_active)} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteEmpDeduction(ed.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No deductions assigned yet. Create deduction types first, then assign them to employees.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Assign Employee Deduction Dialog */}
+          <Dialog open={empDedDialogOpen} onOpenChange={setEmpDedDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Assign Deduction to Employee</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Employee</Label>
+                  <Select value={empDedEmployee} onValueChange={setEmpDedEmployee}>
+                    <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+                    <SelectContent>
+                      {employees.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Deduction Type</Label>
+                  <Select value={empDedType} onValueChange={(v) => {
+                    setEmpDedType(v);
+                    const dt = deductionTypes.find((d) => d.id === v);
+                    if (dt?.default_amount != null) setEmpDedAmount(dt.default_amount.toString());
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select deduction type" /></SelectTrigger>
+                    <SelectContent>
+                      {deductionTypes.filter((d) => d.is_active).map((dt) => (
+                        <SelectItem key={dt.id} value={dt.id}>{dt.name} {dt.is_percentage ? "(%)" : "($)"}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Amount {deductionTypes.find((d) => d.id === empDedType)?.is_percentage ? "(%)" : "($)"}</Label>
+                  <Input type="number" step="0.01" value={empDedAmount} onChange={(e) => setEmpDedAmount(e.target.value)} />
+                </div>
+                <Button onClick={handleAssignDeduction} className="w-full">Assign Deduction</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+
       </Tabs>
     </div>
   );
