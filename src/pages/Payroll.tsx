@@ -123,16 +123,6 @@ export default function Payroll() {
         setPayStubs(stubsWithEmployees);
       }
 
-      // Fetch deduction types
-      const { data: deductionData } = await supabase
-        .from("payroll_deduction_types")
-        .select("*")
-        .eq("is_active", true);
-
-      if (deductionData) {
-        setDeductionTypes(deductionData as PayrollDeductionType[]);
-      }
-
       // Fetch all deduction types (including inactive for management)
       const { data: allDedTypes } = await supabase
         .from("payroll_deduction_types")
