@@ -217,29 +217,29 @@ export default function HRDashboard() {
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{totalEmployees}</div></CardContent>
         </Card>
-        <Card className="border-green-200 dark:border-green-800">
+        <Card className="border-primary/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <UserCheck className="h-4 w-4 text-green-600" /> Currently Working
+              <UserCheck className="h-4 w-4 text-primary" /> Currently Working
             </CardTitle>
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{clockedInCount}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-primary">{clockedInCount}</div></CardContent>
         </Card>
-        <Card className="border-orange-200 dark:border-orange-800">
+        <Card className="border-destructive/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-orange-600" /> Pending Approvals
+              <AlertCircle className="h-4 w-4 text-destructive" /> Pending Approvals
             </CardTitle>
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-orange-600">{pendingApprovals}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-destructive">{pendingApprovals}</div></CardContent>
         </Card>
-        <Card className="border-purple-200 dark:border-purple-800">
+        <Card className="border-accent/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TreePalm className="h-4 w-4 text-purple-600" /> Pending Leave
+              <TreePalm className="h-4 w-4 text-accent-foreground" /> Pending Leave
             </CardTitle>
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-purple-600">{leaveStats.pending}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-accent-foreground">{leaveStats.pending}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
@@ -332,7 +332,7 @@ export default function HRDashboard() {
             <div className="space-y-3 max-h-[350px] overflow-y-auto">
               {pendingLeaveRequests.length > 0 ? (
                 pendingLeaveRequests.slice(0, 6).map((req) => (
-                  <div key={req.id} className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30">
+                  <div key={req.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={req.employee?.avatar_url || undefined} />
@@ -346,7 +346,7 @@ export default function HRDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100" onClick={() => handleLeaveAction(req.id, "approved")}>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-primary hover:text-primary/80 hover:bg-primary/10" onClick={() => handleLeaveAction(req.id, "approved")}>
                         <ThumbsUp className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10" onClick={() => handleLeaveAction(req.id, "denied")}>
@@ -375,12 +375,12 @@ export default function HRDashboard() {
               {pendingTimesheets.length > 0 ? (
                 <div className="space-y-2">
                   {pendingTimesheets.slice(0, 3).map((ts) => (
-                    <div key={ts.id} className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-950/30 text-sm">
+                    <div key={ts.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm">
                       <div>
                         <p className="font-medium">{ts.employee?.first_name} {ts.employee?.last_name}</p>
                         <p className="text-xs text-muted-foreground">{format(new Date(ts.period_start), "MMM d")} - {format(new Date(ts.period_end), "MMM d")}</p>
                       </div>
-                      <Badge variant="outline" className="text-orange-600 border-orange-300">Pending</Badge>
+                      <Badge variant="outline" className="text-destructive border-destructive/30">Pending</Badge>
                     </div>
                   ))}
                   <Button variant="outline" size="sm" className="w-full" onClick={() => setTimeModalOpen(true)}>
@@ -420,15 +420,15 @@ export default function HRDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="text-center p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30">
-                <p className="text-2xl font-bold text-orange-600">{leaveStats.pending}</p>
+              <div className="text-center p-3 rounded-lg bg-destructive/10">
+                <p className="text-2xl font-bold text-destructive">{leaveStats.pending}</p>
                 <p className="text-xs text-muted-foreground">Pending</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
-                <p className="text-2xl font-bold text-green-600">{leaveStats.approved}</p>
+              <div className="text-center p-3 rounded-lg bg-primary/10">
+                <p className="text-2xl font-bold text-primary">{leaveStats.approved}</p>
                 <p className="text-xs text-muted-foreground">Approved</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-950/30">
+              <div className="text-center p-3 rounded-lg bg-muted">
                 <p className="text-2xl font-bold text-destructive">{leaveStats.denied}</p>
                 <p className="text-xs text-muted-foreground">Denied</p>
               </div>

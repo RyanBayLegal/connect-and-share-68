@@ -316,7 +316,7 @@ export default function TimeManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{workingCount}</div>
+            <div className="text-2xl font-bold text-primary">{workingCount}</div>
           </CardContent>
         </Card>
         <Card>
@@ -334,7 +334,7 @@ export default function TimeManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{pendingTimesheets.length}</div>
+            <div className="text-2xl font-bold text-destructive">{pendingTimesheets.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -344,7 +344,7 @@ export default function TimeManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-primary">
               {timeOffRequests.filter((r) => r.status === "pending").length}
             </div>
           </CardContent>
