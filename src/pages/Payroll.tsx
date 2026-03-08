@@ -652,6 +652,11 @@ export default function Payroll() {
             <FileText className="h-4 w-4 mr-2" />
             Pay Stubs
           </TabsTrigger>
+          <TabsTrigger value="deductions">
+            <Receipt className="h-4 w-4 mr-2" />
+            Deductions
+          </TabsTrigger>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="employees">
