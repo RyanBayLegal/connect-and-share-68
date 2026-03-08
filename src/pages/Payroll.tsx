@@ -1010,6 +1010,14 @@ export default function Payroll() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => openEditPayStub(stub)}
+                                title="Edit Pay Stub"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => setViewingPayStub(stub)}
                                 title="View Details"
                               >
