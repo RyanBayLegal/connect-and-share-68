@@ -375,12 +375,12 @@ export default function HRDashboard() {
               {pendingTimesheets.length > 0 ? (
                 <div className="space-y-2">
                   {pendingTimesheets.slice(0, 3).map((ts) => (
-                    <div key={ts.id} className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-950/30 text-sm">
+                    <div key={ts.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm">
                       <div>
                         <p className="font-medium">{ts.employee?.first_name} {ts.employee?.last_name}</p>
                         <p className="text-xs text-muted-foreground">{format(new Date(ts.period_start), "MMM d")} - {format(new Date(ts.period_end), "MMM d")}</p>
                       </div>
-                      <Badge variant="outline" className="text-orange-600 border-orange-300">Pending</Badge>
+                      <Badge variant="outline" className="text-destructive border-destructive/30">Pending</Badge>
                     </div>
                   ))}
                   <Button variant="outline" size="sm" className="w-full" onClick={() => setTimeModalOpen(true)}>
