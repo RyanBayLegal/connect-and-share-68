@@ -344,7 +344,7 @@ export default function TimeManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-primary">
               {timeOffRequests.filter((r) => r.status === "pending").length}
             </div>
           </CardContent>
