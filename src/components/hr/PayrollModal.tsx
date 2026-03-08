@@ -142,25 +142,110 @@ export function PayrollModal({ open, onOpenChange, onDataChanged }: Props) {
 
   const handleProcessPayroll = async (runId: string) => {
     try {
+      const run = payrollRuns.find((r) => r.id === runId);
+      if (!run) return;
+
       const empsWithSettings = employees.filter((e) => e.payroll_settings);
+
+      // Fetch actual time entries for the pay period
+      const { data: periodEntries } = await supabase
+        .from("time_entries")
+        .select("employee_id, clock_in, clock_out")
+        .gte("clock_in", run.period_start)
+        .lte("clock_in", run.period_end + "T23:59:59")
+        .not("clock_out", "is", null);
+
+      // Fetch approved PTO
+      const { data: ptoRequests } = await supabase
+        .from("time_off_requests")
+        .select("employee_id, hours_requested")
+        .eq("status", "approved")
+        .gte("start_date", run.period_start)
+        .lte("end_date", run.period_end);
+
+      // Fetch employee deductions
+      const { data: allDeductions } = await supabase
+        .from("employee_deductions")
+        .select("*, deduction_type:payroll_deduction_types(*)")
+        .eq("is_active", true);
+
+      const periodStart = new Date(run.period_start);
+      const periodEnd = new Date(run.period_end);
+      const periodDays = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      const periodWeeks = periodDays / 7;
+
       for (const emp of empsWithSettings) {
         const s = emp.payroll_settings!;
-        let regularHours = s.standard_hours_per_week * 2;
-        let grossPay = s.pay_type === "hourly" && s.hourly_rate
-          ? regularHours * s.hourly_rate
-          : s.annual_salary ? s.annual_salary / 26 : 0;
-        const taxDeduction = grossPay * (s.tax_withholding_percent / 100);
+
+        // Sum actual hours from time entries
+        const empEntries = (periodEntries || []).filter((e) => e.employee_id === emp.id);
+        let totalWorkedHours = 0;
+        empEntries.forEach((entry) => {
+          const start = new Date(entry.clock_in).getTime();
+          const end = new Date(entry.clock_out!).getTime();
+          totalWorkedHours += (end - start) / (1000 * 60 * 60);
+        });
+        totalWorkedHours = Math.round(totalWorkedHours * 100) / 100;
+
+        const empPto = (ptoRequests || [])
+          .filter((p) => p.employee_id === emp.id)
+          .reduce((sum, p) => sum + (p.hours_requested || 0), 0);
+
+        // Calculate regular vs overtime
+        const expectedHours = s.standard_hours_per_week * periodWeeks;
+        let regularHours: number;
+        let overtimeHours: number;
+
+        if (totalWorkedHours > expectedHours) {
+          regularHours = Math.round(expectedHours * 100) / 100;
+          overtimeHours = Math.round((totalWorkedHours - expectedHours) * 100) / 100;
+        } else {
+          regularHours = totalWorkedHours;
+          overtimeHours = 0;
+        }
+
+        // Calculate gross pay
+        let grossPay = 0;
+        if (s.pay_type === "hourly" && s.hourly_rate) {
+          grossPay = regularHours * s.hourly_rate +
+                     overtimeHours * s.hourly_rate * s.overtime_multiplier;
+        } else if (s.pay_type === "salary" && s.annual_salary) {
+          grossPay = s.annual_salary / (52 / periodWeeks);
+        }
+        grossPay = Math.round(grossPay * 100) / 100;
+
+        // Calculate deductions
+        const deductions: Record<string, number> = {};
+        const taxDeduction = Math.round(grossPay * (s.tax_withholding_percent / 100) * 100) / 100;
+        if (taxDeduction > 0) deductions.tax = taxDeduction;
+
+        const empDeductions = (allDeductions || []).filter((d) => d.employee_id === emp.id);
+        for (const ded of empDeductions) {
+          const dedType = ded.deduction_type as any;
+          const dedName = dedType?.name || "Other";
+          if (dedType?.is_percentage) {
+            deductions[dedName] = Math.round(grossPay * (ded.amount / 100) * 100) / 100;
+          } else {
+            deductions[dedName] = ded.amount;
+          }
+        }
+
+        const totalDeductions = Object.values(deductions).reduce((a, b) => a + b, 0);
+        const netPay = Math.round((grossPay - totalDeductions) * 100) / 100;
+
         await supabase.from("pay_stubs").insert({
           payroll_run_id: runId, employee_id: emp.id,
-          regular_hours: regularHours, overtime_hours: 0, pto_hours: 0,
-          gross_pay: grossPay, deductions: { tax: taxDeduction }, net_pay: grossPay - taxDeduction,
+          regular_hours: regularHours, overtime_hours: overtimeHours, pto_hours: empPto,
+          gross_pay: grossPay, deductions, net_pay: netPay,
         });
       }
+
       await supabase.from("payroll_runs").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", runId);
       toast({ title: "Payroll processed!" });
       fetchData();
       onDataChanged?.();
     } catch (error) {
+      console.error("Error processing payroll:", error);
       toast({ title: "Error", variant: "destructive" });
     }
   };

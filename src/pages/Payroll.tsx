@@ -187,45 +187,113 @@ export default function Payroll() {
 
   const handleProcessPayroll = async (runId: string) => {
     try {
-      // Get the payroll run
       const run = payrollRuns.find((r) => r.id === runId);
       if (!run) return;
 
-      // Generate pay stubs for all employees with payroll settings
       const employeesWithSettings = employees.filter((e) => e.payroll_settings);
+
+      // Fetch all time entries for the pay period
+      const { data: periodEntries } = await supabase
+        .from("time_entries")
+        .select("employee_id, clock_in, clock_out")
+        .gte("clock_in", run.period_start)
+        .lte("clock_in", run.period_end + "T23:59:59")
+        .not("clock_out", "is", null);
+
+      // Fetch approved PTO for the period
+      const { data: ptoRequests } = await supabase
+        .from("time_off_requests")
+        .select("employee_id, hours_requested")
+        .eq("status", "approved")
+        .gte("start_date", run.period_start)
+        .lte("end_date", run.period_end);
+
+      // Calculate weeks in pay period
+      const periodStart = new Date(run.period_start);
+      const periodEnd = new Date(run.period_end);
+      const periodDays = Math.max(1, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      const periodWeeks = periodDays / 7;
+
+      // Fetch employee deductions
+      const { data: allDeductions } = await supabase
+        .from("employee_deductions")
+        .select("*, deduction_type:payroll_deduction_types(*)")
+        .eq("is_active", true);
 
       for (const emp of employeesWithSettings) {
         const settings = emp.payroll_settings!;
-        
-        // Calculate pay (simplified - in real app, would use actual time entries)
-        let regularHours = settings.standard_hours_per_week * 2; // Bi-weekly
-        let overtimeHours = 0;
-        let grossPay = 0;
 
-        if (settings.pay_type === "hourly" && settings.hourly_rate) {
-          grossPay = regularHours * settings.hourly_rate + 
-                     overtimeHours * settings.hourly_rate * settings.overtime_multiplier;
-        } else if (settings.pay_type === "salary" && settings.annual_salary) {
-          grossPay = settings.annual_salary / 26; // Bi-weekly
+        // Sum actual worked hours from time entries
+        const empEntries = (periodEntries || []).filter((e) => e.employee_id === emp.id);
+        let totalWorkedHours = 0;
+        empEntries.forEach((entry) => {
+          const start = new Date(entry.clock_in).getTime();
+          const end = new Date(entry.clock_out!).getTime();
+          totalWorkedHours += (end - start) / (1000 * 60 * 60);
+        });
+        totalWorkedHours = Math.round(totalWorkedHours * 100) / 100;
+
+        // Calculate PTO hours for this employee
+        const empPto = (ptoRequests || [])
+          .filter((p) => p.employee_id === emp.id)
+          .reduce((sum, p) => sum + (p.hours_requested || 0), 0);
+
+        // Calculate regular vs overtime
+        const expectedHours = settings.standard_hours_per_week * periodWeeks;
+        let regularHours: number;
+        let overtimeHours: number;
+
+        if (totalWorkedHours > expectedHours) {
+          regularHours = Math.round(expectedHours * 100) / 100;
+          overtimeHours = Math.round((totalWorkedHours - expectedHours) * 100) / 100;
+        } else {
+          regularHours = totalWorkedHours;
+          overtimeHours = 0;
         }
 
+        // Calculate gross pay
+        let grossPay = 0;
+        if (settings.pay_type === "hourly" && settings.hourly_rate) {
+          grossPay = regularHours * settings.hourly_rate +
+                     overtimeHours * settings.hourly_rate * settings.overtime_multiplier;
+        } else if (settings.pay_type === "salary" && settings.annual_salary) {
+          // Salary employees get fixed pay regardless of hours
+          grossPay = settings.annual_salary / (52 / periodWeeks);
+        }
+        grossPay = Math.round(grossPay * 100) / 100;
+
         // Calculate deductions
-        const taxDeduction = grossPay * (settings.tax_withholding_percent / 100);
-        const netPay = grossPay - taxDeduction;
+        const deductions: Record<string, number> = {};
+        const taxDeduction = Math.round(grossPay * (settings.tax_withholding_percent / 100) * 100) / 100;
+        if (taxDeduction > 0) deductions.tax = taxDeduction;
+
+        // Apply employee-specific deductions
+        const empDeductions = (allDeductions || []).filter((d) => d.employee_id === emp.id);
+        for (const ded of empDeductions) {
+          const dedType = ded.deduction_type as any;
+          const dedName = dedType?.name || "Other";
+          if (dedType?.is_percentage) {
+            deductions[dedName] = Math.round(grossPay * (ded.amount / 100) * 100) / 100;
+          } else {
+            deductions[dedName] = ded.amount;
+          }
+        }
+
+        const totalDeductions = Object.values(deductions).reduce((a, b) => a + b, 0);
+        const netPay = Math.round((grossPay - totalDeductions) * 100) / 100;
 
         await supabase.from("pay_stubs").insert({
           payroll_run_id: runId,
           employee_id: emp.id,
           regular_hours: regularHours,
           overtime_hours: overtimeHours,
-          pto_hours: 0,
+          pto_hours: empPto,
           gross_pay: grossPay,
-          deductions: { tax: taxDeduction },
+          deductions,
           net_pay: netPay,
         });
       }
 
-      // Update payroll run status
       await supabase
         .from("payroll_runs")
         .update({ status: "completed", completed_at: new Date().toISOString() })
