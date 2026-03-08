@@ -132,11 +132,113 @@ export default function Payroll() {
       if (deductionData) {
         setDeductionTypes(deductionData as PayrollDeductionType[]);
       }
+
+      // Fetch all deduction types (including inactive for management)
+      const { data: allDedTypes } = await supabase
+        .from("payroll_deduction_types")
+        .select("*")
+        .order("name");
+      if (allDedTypes) {
+        setDeductionTypes(allDedTypes as PayrollDeductionType[]);
+      }
+
+      // Fetch employee deductions with type info
+      const { data: empDedData } = await supabase
+        .from("employee_deductions")
+        .select("*, deduction_type:payroll_deduction_types(*)")
+        .order("created_at", { ascending: false });
+      if (empDedData) {
+        setEmployeeDeductions(empDedData.map((d) => ({
+          ...(d as unknown as EmployeeDeduction),
+          deduction_type: d.deduction_type as unknown as PayrollDeductionType,
+        })));
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Deduction type CRUD
+  const openDedTypeForm = (dedType?: PayrollDeductionType) => {
+    setEditingDedType(dedType || null);
+    setDedTypeName(dedType?.name || "");
+    setDedTypeDescription(dedType?.description || "");
+    setDedTypeIsPercentage(dedType?.is_percentage || false);
+    setDedTypeDefaultAmount(dedType?.default_amount?.toString() || "");
+    setDedTypeDialogOpen(true);
+  };
+
+  const handleSaveDedType = async () => {
+    if (!dedTypeName.trim()) return;
+    try {
+      const data = {
+        name: dedTypeName.trim(),
+        description: dedTypeDescription.trim() || null,
+        is_percentage: dedTypeIsPercentage,
+        default_amount: dedTypeDefaultAmount ? parseFloat(dedTypeDefaultAmount) : null,
+      };
+      if (editingDedType) {
+        await supabase.from("payroll_deduction_types").update(data).eq("id", editingDedType.id);
+      } else {
+        await supabase.from("payroll_deduction_types").insert(data);
+      }
+      toast({ title: `Deduction type ${editingDedType ? "updated" : "created"}!` });
+      setDedTypeDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({ title: "Error saving deduction type", variant: "destructive" });
+    }
+  };
+
+  const handleToggleDedType = async (id: string, isActive: boolean) => {
+    await supabase.from("payroll_deduction_types").update({ is_active: !isActive }).eq("id", id);
+    fetchData();
+  };
+
+  const handleDeleteDedType = async (id: string) => {
+    // Check if in use
+    const { data: inUse } = await supabase.from("employee_deductions").select("id").eq("deduction_type_id", id).limit(1);
+    if (inUse && inUse.length > 0) {
+      toast({ title: "Cannot delete — deduction type is assigned to employees. Deactivate it instead.", variant: "destructive" });
+      return;
+    }
+    await supabase.from("payroll_deduction_types").delete().eq("id", id);
+    toast({ title: "Deduction type deleted" });
+    fetchData();
+  };
+
+  // Employee deduction assignment
+  const handleAssignDeduction = async () => {
+    if (!empDedEmployee || !empDedType || !empDedAmount) return;
+    try {
+      await supabase.from("employee_deductions").insert({
+        employee_id: empDedEmployee,
+        deduction_type_id: empDedType,
+        amount: parseFloat(empDedAmount),
+        is_active: true,
+      });
+      toast({ title: "Deduction assigned to employee!" });
+      setEmpDedDialogOpen(false);
+      setEmpDedEmployee("");
+      setEmpDedType("");
+      setEmpDedAmount("");
+      fetchData();
+    } catch (error) {
+      toast({ title: "Error assigning deduction", variant: "destructive" });
+    }
+  };
+
+  const handleToggleEmpDeduction = async (id: string, isActive: boolean) => {
+    await supabase.from("employee_deductions").update({ is_active: !isActive }).eq("id", id);
+    fetchData();
+  };
+
+  const handleDeleteEmpDeduction = async (id: string) => {
+    await supabase.from("employee_deductions").delete().eq("id", id);
+    toast({ title: "Employee deduction removed" });
+    fetchData();
   };
 
   const handleSavePayrollSettings = async () => {
