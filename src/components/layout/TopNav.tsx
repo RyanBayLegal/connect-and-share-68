@@ -226,7 +226,7 @@ export function TopNav() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-background border-border text-foreground w-72">
+            <SheetContent side="right" className="glass-popover text-foreground w-72 border-border">
               <div className="flex flex-col gap-2 mt-12">
                 <NavLink
                   to="/"
