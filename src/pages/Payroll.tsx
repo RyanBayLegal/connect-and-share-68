@@ -427,6 +427,34 @@ export default function Payroll() {
     }
   };
 
+  const openEditPayStub = (stub: PayStub & { employee?: Profile }) => {
+    setEditingPayStub(stub);
+    setEditGrossPay(stub.gross_pay.toFixed(2));
+    setEditNetPay(stub.net_pay.toFixed(2));
+    setEditRegularHours(stub.regular_hours.toString());
+    setEditOvertimeHours(stub.overtime_hours.toString());
+    setEditPtoHours(stub.pto_hours.toString());
+  };
+
+  const handleSavePayStub = async () => {
+    if (!editingPayStub) return;
+    try {
+      const { error } = await supabase.from("pay_stubs").update({
+        gross_pay: parseFloat(editGrossPay),
+        net_pay: parseFloat(editNetPay),
+        regular_hours: parseFloat(editRegularHours),
+        overtime_hours: parseFloat(editOvertimeHours),
+        pto_hours: parseFloat(editPtoHours),
+      }).eq("id", editingPayStub.id);
+      if (error) throw error;
+      toast({ title: "Pay stub updated!" });
+      setEditingPayStub(null);
+      fetchData();
+    } catch (error) {
+      toast({ title: "Error updating pay stub", variant: "destructive" });
+    }
+  };
+
   const openEditSettings = (employee: Profile & { payroll_settings?: PayrollSettings }) => {
     setSelectedEmployee(employee);
     const settings = employee.payroll_settings;
