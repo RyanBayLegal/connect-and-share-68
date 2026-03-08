@@ -217,29 +217,29 @@ export default function HRDashboard() {
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{totalEmployees}</div></CardContent>
         </Card>
-        <Card className="border-green-200 dark:border-green-800">
+        <Card className="border-primary/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <UserCheck className="h-4 w-4 text-green-600" /> Currently Working
+              <UserCheck className="h-4 w-4 text-primary" /> Currently Working
             </CardTitle>
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{clockedInCount}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-primary">{clockedInCount}</div></CardContent>
         </Card>
-        <Card className="border-orange-200 dark:border-orange-800">
+        <Card className="border-destructive/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-orange-600" /> Pending Approvals
+              <AlertCircle className="h-4 w-4 text-destructive" /> Pending Approvals
             </CardTitle>
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-orange-600">{pendingApprovals}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-destructive">{pendingApprovals}</div></CardContent>
         </Card>
-        <Card className="border-purple-200 dark:border-purple-800">
+        <Card className="border-accent/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TreePalm className="h-4 w-4 text-purple-600" /> Pending Leave
+              <TreePalm className="h-4 w-4 text-accent-foreground" /> Pending Leave
             </CardTitle>
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold text-purple-600">{leaveStats.pending}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-accent-foreground">{leaveStats.pending}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
