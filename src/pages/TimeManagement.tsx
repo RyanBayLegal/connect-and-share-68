@@ -334,7 +334,7 @@ export default function TimeManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{pendingTimesheets.length}</div>
+            <div className="text-2xl font-bold text-destructive">{pendingTimesheets.length}</div>
           </CardContent>
         </Card>
         <Card>

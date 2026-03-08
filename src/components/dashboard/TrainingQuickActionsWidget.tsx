@@ -69,7 +69,7 @@ export function TrainingQuickActionsWidget() {
   if (!canAccess) return null;
 
   return (
-    <Card className="bg-gradient-to-br from-purple-500/10 to-primary/10 border-primary/20">
+    <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <GraduationCap className="h-5 w-5 text-primary" />

@@ -332,7 +332,7 @@ export default function HRDashboard() {
             <div className="space-y-3 max-h-[350px] overflow-y-auto">
               {pendingLeaveRequests.length > 0 ? (
                 pendingLeaveRequests.slice(0, 6).map((req) => (
-                  <div key={req.id} className="flex items-center justify-between p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30">
+                  <div key={req.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={req.employee?.avatar_url || undefined} />

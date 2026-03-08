@@ -210,7 +210,7 @@ export default function Settings() {
         <CardContent>
           <form onSubmit={handlePasswordChange} className="space-y-4">
             {passwordError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{passwordError}</AlertDescription></Alert>}
-            {passwordSuccess && <Alert className="border-green-500 text-green-700"><CheckCircle2 className="h-4 w-4" /><AlertDescription>Password updated successfully!</AlertDescription></Alert>}
+            {passwordSuccess && <Alert className="border-primary text-primary"><CheckCircle2 className="h-4 w-4" /><AlertDescription>Password updated successfully!</AlertDescription></Alert>}
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
               <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
