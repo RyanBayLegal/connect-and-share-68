@@ -42,33 +42,33 @@
 
   .dark {
     /* Deep Black / Navy Theme */
-    --background: 0 0% 11%;
-    --foreground: 0 0% 100%;
+    --background: 220 20% 7%;
+    --foreground: 0 0% 95%;
 
-    --card: 0 0% 13%;
-    --card-foreground: 0 0% 100%;
+    --card: 220 25% 12%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 0 0% 95%;
 
     --primary: 220 57% 24%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 30% 18%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 30% 16%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 220 15% 15%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 220 20% 14%;
+    --muted-foreground: 220 15% 55%;
 
-    --accent: 220 30% 18%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 30% 16%;
+    --accent-foreground: 0 0% 95%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 20% 18%;
-    --input: 220 20% 18%;
-    --ring: 220 57% 24%;
+    --border: 220 30% 22%;
+    --input: 220 25% 18%;
+    --ring: 220 57% 34%;
   }
 }
 
@@ -87,9 +87,10 @@
 
   .dark body {
     background-image:
-      radial-gradient(ellipse 80% 60% at 50% -20%, hsl(var(--primary) / 0.08), transparent),
-      radial-gradient(ellipse 60% 50% at 80% 100%, hsl(220 80% 40% / 0.06), transparent),
-      radial-gradient(ellipse 40% 40% at 20% 50%, hsl(var(--primary) / 0.04), transparent);
+      radial-gradient(ellipse 80% 60% at 50% -10%, hsl(220 60% 30% / 0.25), transparent),
+      radial-gradient(ellipse 50% 50% at 90% 80%, hsl(240 50% 25% / 0.2), transparent),
+      radial-gradient(ellipse 60% 40% at 10% 60%, hsl(200 60% 20% / 0.15), transparent),
+      radial-gradient(ellipse 30% 30% at 70% 30%, hsl(220 70% 35% / 0.12), transparent);
   }
 }
 
@@ -97,27 +98,23 @@
    Glassmorphism Utilities — Enhanced
    ────────────────────────────────────────── */
 .glass-card {
-  background: hsl(var(--card) / 0.45);
-  backdrop-filter: blur(24px) saturate(1.6) brightness(1.05);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6) brightness(1.05);
-  border: 1px solid hsl(var(--border) / 0.35);
+  background: hsl(var(--card) / 0.5);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid hsl(var(--border) / 0.4);
   box-shadow:
-    0 8px 32px hsl(0 0% 0% / 0.4),
-    0 2px 8px hsl(0 0% 0% / 0.2),
-    inset 0 1px 0 hsl(0 0% 100% / 0.08),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.1),
-    0 0 0 1px hsl(var(--primary) / 0.05);
+    0 8px 32px hsl(0 0% 0% / 0.12),
+    inset 0 1px 0 hsl(0 0% 100% / 0.06);
 }
 
 .dark .glass-card {
-  background: hsl(var(--card) / 0.35);
-  border-color: hsl(var(--border) / 0.25);
+  background: hsl(var(--card) / 0.4);
+  border-color: hsl(220 40% 30% / 0.4);
   box-shadow:
-    0 8px 40px hsl(0 0% 0% / 0.5),
-    0 2px 12px hsl(0 0% 0% / 0.3),
-    inset 0 1px 0 hsl(0 0% 100% / 0.06),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.15),
-    0 0 0 1px hsl(var(--primary) / 0.08);
+    0 8px 40px hsl(0 0% 0% / 0.4),
+    0 0 0 1px hsl(220 50% 40% / 0.1),
+    inset 0 1px 0 hsl(0 0% 100% / 0.08),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.2);
 }
 
 .glass-panel {
@@ -132,40 +129,40 @@
 
 /* Frosted glass for navigation & headers */
 .glass-nav {
-  background: hsl(var(--background) / 0.6);
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  background: hsl(var(--background) / 0.7);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
   border-bottom: 1px solid hsl(var(--border) / 0.3);
   box-shadow:
-    0 4px 20px hsl(0 0% 0% / 0.15),
-    inset 0 -1px 0 hsl(0 0% 100% / 0.04);
+    0 4px 20px hsl(0 0% 0% / 0.1);
 }
 
 .dark .glass-nav {
-  background: hsl(var(--background) / 0.5);
+  background: hsl(var(--background) / 0.6);
+  border-bottom-color: hsl(220 40% 30% / 0.3);
   box-shadow:
-    0 4px 24px hsl(0 0% 0% / 0.3),
-    inset 0 -1px 0 hsl(0 0% 100% / 0.03);
+    0 4px 30px hsl(0 0% 0% / 0.4),
+    inset 0 -1px 0 hsl(0 0% 100% / 0.05);
 }
 
 /* Glass popover / dropdown */
 .glass-popover {
-  background: hsl(var(--popover) / 0.7);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  border: 1px solid hsl(var(--border) / 0.3);
+  background: hsl(var(--popover) / 0.75);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid hsl(var(--border) / 0.35);
   box-shadow:
-    0 12px 48px hsl(0 0% 0% / 0.4),
-    0 4px 16px hsl(0 0% 0% / 0.2),
+    0 12px 48px hsl(0 0% 0% / 0.15),
     inset 0 1px 0 hsl(0 0% 100% / 0.06);
 }
 
 .dark .glass-popover {
-  background: hsl(var(--popover) / 0.55);
+  background: hsl(var(--popover) / 0.6);
+  border-color: hsl(220 40% 30% / 0.35);
   box-shadow:
-    0 16px 56px hsl(0 0% 0% / 0.6),
-    0 4px 20px hsl(0 0% 0% / 0.3),
-    inset 0 1px 0 hsl(0 0% 100% / 0.05);
+    0 16px 56px hsl(0 0% 0% / 0.5),
+    0 0 0 1px hsl(220 50% 40% / 0.08),
+    inset 0 1px 0 hsl(0 0% 100% / 0.06);
 }
 
 /* Glass input fields */
