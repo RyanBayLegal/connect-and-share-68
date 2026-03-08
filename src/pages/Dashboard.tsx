@@ -74,20 +74,20 @@ export default function Dashboard() {
           </div>
 
           <div className="lg:col-span-6">
-            <Card className="bg-zinc-900/40 border-white/5 overflow-hidden h-full">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 bg-gradient-to-b from-white/[0.02] to-transparent">
+            <Card className="overflow-hidden h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="flex items-center gap-2">
-                  <Megaphone className="h-5 w-5 text-sky-500" />
+                  <Megaphone className="h-5 w-5 text-primary" />
                   <CardTitle className="text-lg font-bold uppercase tracking-wider">Announcements</CardTitle>
                 </div>
-                <Link to="/announcements" className="text-xs font-bold text-sky-500 hover:text-sky-400 uppercase tracking-wider">View All →</Link>
+                <Link to="/announcements" className="text-xs font-bold text-primary hover:text-primary/80 uppercase tracking-wider">View All →</Link>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
                 {recentAnnouncements.length === 0 ? (
-                  <p className="text-sm text-zinc-500 text-center py-8">No announcements yet</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">No announcements yet</p>
                 ) : (
                   recentAnnouncements.map((announcement) => (
-                    <Link key={announcement.id} to="/announcements" className="group block p-4 rounded-xl bg-zinc-800/30 hover:bg-zinc-800/60 border border-white/5 hover:border-sky-500/20 transition-all">
+                    <Link key={announcement.id} to="/announcements" className="group block p-4 rounded-xl bg-muted/30 hover:bg-muted/60 border border-border hover:border-primary/20 transition-all">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge
                           variant={
@@ -102,7 +102,7 @@ export default function Dashboard() {
                           {PRIORITIES[announcement.priority]?.label || announcement.priority}
                         </Badge>
                         {announcement.target_department_id ? (
-                          <Badge variant="outline" className="text-[10px] text-sky-400 border-sky-500/30 px-2 py-0">Dept</Badge>
+                          <Badge variant="outline" className="text-[10px] text-primary border-primary/30 px-2 py-0">Dept</Badge>
                         ) : (
                           <Badge variant="outline" className="text-[10px] px-2 py-0">Global</Badge>
                         )}
@@ -112,13 +112,13 @@ export default function Dashboard() {
                           </Badge>
                         )}
                       </div>
-                      <h4 className="font-bold text-base text-zinc-100 group-hover:text-sky-400 transition-colors mb-1">
+                      <h4 className="font-bold text-base text-foreground group-hover:text-primary transition-colors mb-1">
                         {announcement.title}
                       </h4>
-                      <p className="text-sm text-zinc-400 line-clamp-2 leading-relaxed">
+                      <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                         {announcement.content}
                       </p>
-                      <div className="flex items-center gap-3 mt-3 text-xs text-zinc-500">
+                      <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
                         {announcement.published_at && (
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
