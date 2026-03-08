@@ -337,7 +337,7 @@ function AnnouncementList({ announcements, readIds, onView }: { announcements: A
                     {PRIORITIES[announcement.priority].label}
                   </Badge>
                   {announcement.target_department_id ? (
-                    <Badge variant="outline" className="text-sky-400 border-sky-500/30 text-[10px]">Dept</Badge>
+                    <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">Dept</Badge>
                   ) : (
                     <Badge variant="outline" className="text-[10px]">Global</Badge>
                   )}

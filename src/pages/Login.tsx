@@ -85,8 +85,8 @@ export default function Login() {
                 className="h-20 w-20 rounded-xl shadow-lg object-contain"
               />
             ) : (
-              <div className="h-20 w-20 rounded-xl bg-sky-500/20 flex items-center justify-center mx-auto shadow-lg">
-                <span className="text-3xl font-black text-sky-400">{branding.company_name?.[0] || "B"}</span>
+              <div className="h-20 w-20 rounded-xl bg-primary/20 flex items-center justify-center mx-auto shadow-lg">
+                <span className="text-3xl font-black text-primary">{branding.company_name?.[0] || "B"}</span>
               </div>
             )}
           </div>
