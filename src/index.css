@@ -129,20 +129,20 @@
 
 /* Frosted glass for navigation & headers */
 .glass-nav {
-  background: hsl(var(--background) / 0.6);
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  background: hsl(var(--background) / 0.7);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
   border-bottom: 1px solid hsl(var(--border) / 0.3);
   box-shadow:
-    0 4px 20px hsl(0 0% 0% / 0.15),
-    inset 0 -1px 0 hsl(0 0% 100% / 0.04);
+    0 4px 20px hsl(0 0% 0% / 0.1);
 }
 
 .dark .glass-nav {
-  background: hsl(var(--background) / 0.5);
+  background: hsl(var(--background) / 0.6);
+  border-bottom-color: hsl(220 40% 30% / 0.3);
   box-shadow:
-    0 4px 24px hsl(0 0% 0% / 0.3),
-    inset 0 -1px 0 hsl(0 0% 100% / 0.03);
+    0 4px 30px hsl(0 0% 0% / 0.4),
+    inset 0 -1px 0 hsl(0 0% 100% / 0.05);
 }
 
 /* Glass popover / dropdown */
