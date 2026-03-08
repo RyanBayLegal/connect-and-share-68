@@ -188,7 +188,7 @@ export function TopNav() {
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-popover border-border text-popover-foreground">
+            <DropdownMenuContent align="end" className="w-56 glass-popover text-popover-foreground">
               <div className="px-2 py-2">
                 <p className="text-sm font-bold">{profile?.first_name} {profile?.last_name}</p>
                 <p className="text-xs text-muted-foreground">{profile?.email}</p>
