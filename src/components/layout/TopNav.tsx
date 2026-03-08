@@ -135,7 +135,7 @@ export function TopNav() {
                 <ChevronDown className={cn("h-3 w-3 transition-transform", megaOpen && "rotate-180")} />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="center" className="w-[480px] p-0 bg-popover border-border text-popover-foreground">
+            <PopoverContent align="center" className="w-[480px] p-0 glass-popover text-popover-foreground">
               <div className="p-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Resources & Tools</h3>
                 <div className="grid grid-cols-2 gap-1">
