@@ -116,7 +116,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isSubmitting}
-                className="bg-background"
+                className="glass-input"
               />
             </div>
 
