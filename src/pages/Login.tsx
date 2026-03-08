@@ -144,7 +144,11 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+          <div className="mt-4 text-center">
+            <ForgotPasswordDialog />
+          </div>
+
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             Don't have an account? Contact your administrator to get access.
           </p>
         </CardContent>
