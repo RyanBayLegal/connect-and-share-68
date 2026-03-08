@@ -347,10 +347,13 @@ export default function Payroll() {
           .filter((p) => p.employee_id === emp.id)
           .reduce((sum, p) => sum + (p.hours_requested || 0), 0);
 
-        // Calculate regular vs overtime
+        // Calculate regular vs overtime (worked hours only, PTO counted separately)
         const expectedHours = settings.standard_hours_per_week * periodWeeks;
         let regularHours: number;
         let overtimeHours: number;
+
+        // For overtime calculation, include PTO as "covered" hours
+        const totalCoveredHours = totalWorkedHours + empPto;
 
         if (totalWorkedHours > expectedHours) {
           regularHours = Math.round(expectedHours * 100) / 100;
@@ -363,10 +366,12 @@ export default function Payroll() {
         // Calculate gross pay
         let grossPay = 0;
         if (settings.pay_type === "hourly" && settings.hourly_rate) {
+          // Pay for worked hours (regular + overtime) PLUS PTO hours at regular rate
           grossPay = regularHours * settings.hourly_rate +
-                     overtimeHours * settings.hourly_rate * settings.overtime_multiplier;
+                     overtimeHours * settings.hourly_rate * settings.overtime_multiplier +
+                     empPto * settings.hourly_rate;
         } else if (settings.pay_type === "salary" && settings.annual_salary) {
-          // Salary employees get fixed pay regardless of hours
+          // Salary employees get fixed pay — PTO does not reduce salary
           grossPay = settings.annual_salary / (52 / periodWeeks);
         }
         grossPay = Math.round(grossPay * 100) / 100;
