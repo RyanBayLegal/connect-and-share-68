@@ -75,7 +75,7 @@ export function TopNav() {
     : "U";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full glass-nav">
       <div className="container flex h-16 items-center justify-between px-4 lg:px-6">
         {/* Logo */}
         <NavLink to="/" className="flex items-center gap-3 group shrink-0">
@@ -135,7 +135,7 @@ export function TopNav() {
                 <ChevronDown className={cn("h-3 w-3 transition-transform", megaOpen && "rotate-180")} />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="center" className="w-[480px] p-0 bg-popover border-border text-popover-foreground">
+            <PopoverContent align="center" className="w-[480px] p-0 glass-popover text-popover-foreground">
               <div className="p-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Resources & Tools</h3>
                 <div className="grid grid-cols-2 gap-1">
@@ -188,7 +188,7 @@ export function TopNav() {
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-popover border-border text-popover-foreground">
+            <DropdownMenuContent align="end" className="w-56 glass-popover text-popover-foreground">
               <div className="px-2 py-2">
                 <p className="text-sm font-bold">{profile?.first_name} {profile?.last_name}</p>
                 <p className="text-xs text-muted-foreground">{profile?.email}</p>
@@ -226,7 +226,7 @@ export function TopNav() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-background border-border text-foreground w-72">
+            <SheetContent side="right" className="glass-popover text-foreground w-72 border-border">
               <div className="flex flex-col gap-2 mt-12">
                 <NavLink
                   to="/"
