@@ -346,7 +346,7 @@ export default function HRDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-100" onClick={() => handleLeaveAction(req.id, "approved")}>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-primary hover:text-primary/80 hover:bg-primary/10" onClick={() => handleLeaveAction(req.id, "approved")}>
                         <ThumbsUp className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10" onClick={() => handleLeaveAction(req.id, "denied")}>
