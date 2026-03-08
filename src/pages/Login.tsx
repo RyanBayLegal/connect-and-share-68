@@ -75,7 +75,7 @@ export default function Login() {
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary rounded-full blur-[120px] opacity-10 -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary rounded-full blur-[120px] opacity-5 translate-y-1/2 -translate-x-1/2" />
 
-      <Card className="w-full max-w-md relative z-10 glass-card neon-border border-0">
+      <Card className="w-full max-w-md relative z-10 glass-card neon-border border-0 shadow-[0_0_60px_hsl(var(--primary)/0.12)]">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto mb-4">
             {branding.logo_url ? (
