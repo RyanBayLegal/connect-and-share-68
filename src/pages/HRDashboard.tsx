@@ -420,15 +420,15 @@ export default function HRDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="text-center p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30">
-                <p className="text-2xl font-bold text-orange-600">{leaveStats.pending}</p>
+              <div className="text-center p-3 rounded-lg bg-destructive/10">
+                <p className="text-2xl font-bold text-destructive">{leaveStats.pending}</p>
                 <p className="text-xs text-muted-foreground">Pending</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
-                <p className="text-2xl font-bold text-green-600">{leaveStats.approved}</p>
+              <div className="text-center p-3 rounded-lg bg-primary/10">
+                <p className="text-2xl font-bold text-primary">{leaveStats.approved}</p>
                 <p className="text-xs text-muted-foreground">Approved</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-950/30">
+              <div className="text-center p-3 rounded-lg bg-muted">
                 <p className="text-2xl font-bold text-destructive">{leaveStats.denied}</p>
                 <p className="text-xs text-muted-foreground">Denied</p>
               </div>
