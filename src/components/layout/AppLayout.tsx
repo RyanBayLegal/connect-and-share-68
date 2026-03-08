@@ -1,6 +1,7 @@
 import { TopNav } from "./TopNav";
 import { Footer } from "./Footer";
 import { PageTransition } from "./PageTransition";
+import { Breadcrumbs } from "./Breadcrumbs";
 
 interface AppLayoutProps {
   children: React.ReactNode;
