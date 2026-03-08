@@ -191,10 +191,12 @@ export function PayrollModal({ open, onOpenChange, onDataChanged }: Props) {
           .filter((p) => p.employee_id === emp.id)
           .reduce((sum, p) => sum + (p.hours_requested || 0), 0);
 
-        // Calculate regular vs overtime
+        // Calculate regular vs overtime (worked hours only, PTO counted separately)
         const expectedHours = s.standard_hours_per_week * periodWeeks;
         let regularHours: number;
         let overtimeHours: number;
+
+        const totalCoveredHours = totalWorkedHours + empPto;
 
         if (totalWorkedHours > expectedHours) {
           regularHours = Math.round(expectedHours * 100) / 100;
@@ -207,9 +209,12 @@ export function PayrollModal({ open, onOpenChange, onDataChanged }: Props) {
         // Calculate gross pay
         let grossPay = 0;
         if (s.pay_type === "hourly" && s.hourly_rate) {
+          // Pay for worked hours (regular + overtime) PLUS PTO hours at regular rate
           grossPay = regularHours * s.hourly_rate +
-                     overtimeHours * s.hourly_rate * s.overtime_multiplier;
+                     overtimeHours * s.hourly_rate * s.overtime_multiplier +
+                     empPto * s.hourly_rate;
         } else if (s.pay_type === "salary" && s.annual_salary) {
+          // Salary employees get fixed pay — PTO does not reduce salary
           grossPay = s.annual_salary / (52 / periodWeeks);
         }
         grossPay = Math.round(grossPay * 100) / 100;

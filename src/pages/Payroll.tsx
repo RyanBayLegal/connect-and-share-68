@@ -59,8 +59,14 @@ export default function Payroll() {
   const [runPeriodEnd, setRunPeriodEnd] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
   const [runPayDate, setRunPayDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  // Pay stub viewer and PDF
+  // Pay stub viewer, editor and PDF
   const [viewingPayStub, setViewingPayStub] = useState<(PayStub & { employee?: Profile }) | null>(null);
+  const [editingPayStub, setEditingPayStub] = useState<(PayStub & { employee?: Profile }) | null>(null);
+  const [editGrossPay, setEditGrossPay] = useState("");
+  const [editNetPay, setEditNetPay] = useState("");
+  const [editRegularHours, setEditRegularHours] = useState("");
+  const [editOvertimeHours, setEditOvertimeHours] = useState("");
+  const [editPtoHours, setEditPtoHours] = useState("");
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const payStubRef = useRef<HTMLDivElement>(null);
 
@@ -347,10 +353,13 @@ export default function Payroll() {
           .filter((p) => p.employee_id === emp.id)
           .reduce((sum, p) => sum + (p.hours_requested || 0), 0);
 
-        // Calculate regular vs overtime
+        // Calculate regular vs overtime (worked hours only, PTO counted separately)
         const expectedHours = settings.standard_hours_per_week * periodWeeks;
         let regularHours: number;
         let overtimeHours: number;
+
+        // For overtime calculation, include PTO as "covered" hours
+        const totalCoveredHours = totalWorkedHours + empPto;
 
         if (totalWorkedHours > expectedHours) {
           regularHours = Math.round(expectedHours * 100) / 100;
@@ -363,10 +372,12 @@ export default function Payroll() {
         // Calculate gross pay
         let grossPay = 0;
         if (settings.pay_type === "hourly" && settings.hourly_rate) {
+          // Pay for worked hours (regular + overtime) PLUS PTO hours at regular rate
           grossPay = regularHours * settings.hourly_rate +
-                     overtimeHours * settings.hourly_rate * settings.overtime_multiplier;
+                     overtimeHours * settings.hourly_rate * settings.overtime_multiplier +
+                     empPto * settings.hourly_rate;
         } else if (settings.pay_type === "salary" && settings.annual_salary) {
-          // Salary employees get fixed pay regardless of hours
+          // Salary employees get fixed pay — PTO does not reduce salary
           grossPay = settings.annual_salary / (52 / periodWeeks);
         }
         grossPay = Math.round(grossPay * 100) / 100;
@@ -413,6 +424,34 @@ export default function Payroll() {
     } catch (error) {
       console.error("Error processing payroll:", error);
       toast({ title: "Error processing payroll", variant: "destructive" });
+    }
+  };
+
+  const openEditPayStub = (stub: PayStub & { employee?: Profile }) => {
+    setEditingPayStub(stub);
+    setEditGrossPay(stub.gross_pay.toFixed(2));
+    setEditNetPay(stub.net_pay.toFixed(2));
+    setEditRegularHours(stub.regular_hours.toString());
+    setEditOvertimeHours(stub.overtime_hours.toString());
+    setEditPtoHours(stub.pto_hours.toString());
+  };
+
+  const handleSavePayStub = async () => {
+    if (!editingPayStub) return;
+    try {
+      const { error } = await supabase.from("pay_stubs").update({
+        gross_pay: parseFloat(editGrossPay),
+        net_pay: parseFloat(editNetPay),
+        regular_hours: parseFloat(editRegularHours),
+        overtime_hours: parseFloat(editOvertimeHours),
+        pto_hours: parseFloat(editPtoHours),
+      }).eq("id", editingPayStub.id);
+      if (error) throw error;
+      toast({ title: "Pay stub updated!" });
+      setEditingPayStub(null);
+      fetchData();
+    } catch (error) {
+      toast({ title: "Error updating pay stub", variant: "destructive" });
     }
   };
 
@@ -971,6 +1010,14 @@ export default function Payroll() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                onClick={() => openEditPayStub(stub)}
+                                title="Edit Pay Stub"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => setViewingPayStub(stub)}
                                 title="View Details"
                               >
@@ -1065,6 +1112,49 @@ export default function Payroll() {
                     )}
                     {isGeneratingPdf ? "Generating..." : "Download PDF"}
                   </Button>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Pay Stub Dialog */}
+          <Dialog open={!!editingPayStub} onOpenChange={() => setEditingPayStub(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  Edit Pay Stub: {editingPayStub?.employee?.first_name} {editingPayStub?.employee?.last_name}
+                </DialogTitle>
+                <DialogDescription>
+                  Adjust hours and pay amounts for this pay stub
+                </DialogDescription>
+              </DialogHeader>
+              {editingPayStub && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-2">
+                      <Label>Regular Hours</Label>
+                      <Input type="number" step="0.01" value={editRegularHours} onChange={(e) => setEditRegularHours(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>OT Hours</Label>
+                      <Input type="number" step="0.01" value={editOvertimeHours} onChange={(e) => setEditOvertimeHours(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>PTO Hours</Label>
+                      <Input type="number" step="0.01" value={editPtoHours} onChange={(e) => setEditPtoHours(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Gross Pay ($)</Label>
+                      <Input type="number" step="0.01" value={editGrossPay} onChange={(e) => setEditGrossPay(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Net Pay ($)</Label>
+                      <Input type="number" step="0.01" value={editNetPay} onChange={(e) => setEditNetPay(e.target.value)} />
+                    </div>
+                  </div>
+                  <Button onClick={handleSavePayStub} className="w-full">Save Changes</Button>
                 </div>
               )}
             </DialogContent>
