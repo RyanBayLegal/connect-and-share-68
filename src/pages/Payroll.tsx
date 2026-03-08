@@ -12,7 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Users, Calendar, FileText, Plus, Edit2, Download, Play, CheckCircle, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { DollarSign, Users, Calendar, FileText, Plus, Edit2, Download, Play, CheckCircle, Loader2, Trash2, Receipt } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import html2pdf from "html2pdf.js";
 import type { Profile, PayrollSettings, PayrollRun, PayStub, PayrollDeductionType, EmployeeDeduction } from "@/types/database";
