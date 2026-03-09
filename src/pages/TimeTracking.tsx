@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Play, Square, Calendar, Plus, Send, Loader2, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { Clock, Play, Square, Calendar, Plus, Send, Loader2, ChevronLeft, ChevronRight, Lock, Pencil } from "lucide-react";
 import {
   format,
   differenceInMinutes,
