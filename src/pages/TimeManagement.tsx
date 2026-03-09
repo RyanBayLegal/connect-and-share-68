@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Users, CheckCircle, XCircle, Search, Download, Calendar } from "lucide-react";
+import { Clock, Users, CheckCircle, XCircle, Search, Download, Calendar, Square, Pencil, History } from "lucide-react";
 import { format, differenceInMinutes, startOfWeek, endOfWeek } from "date-fns";
-import type { TimeEntry, TimeTrackingStatus, Timesheet, Profile, TimeOffRequest } from "@/types/database";
+import type { TimeEntry, TimeTrackingStatus, Timesheet, Profile, TimeOffRequest, TimeEntryEdit } from "@/types/database";
 
 interface EmployeeStatus {
   employee: Profile;
