@@ -267,6 +267,9 @@ export default function HRDashboard() {
         <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setSettingsModalOpen(true)}>
           <Settings className="h-5 w-5" /><span>HR Settings</span>
         </Button>
+        <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setOffboardingModalOpen(true)}>
+          <UserX className="h-5 w-5" /><span>Offboarding</span>
+        </Button>
       </div>
 
       {/* Main Content Grid */}
