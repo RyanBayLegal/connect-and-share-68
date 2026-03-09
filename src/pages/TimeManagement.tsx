@@ -24,7 +24,7 @@ interface EmployeeStatus {
 }
 
 export default function TimeManagement() {
-  const { isHRManager, rolesLoaded } = useAuth();
+  const { profile, isHRManager, rolesLoaded } = useAuth();
   const { toast } = useToast();
   const [employeeStatuses, setEmployeeStatuses] = useState<EmployeeStatus[]>([]);
   const [pendingTimesheets, setPendingTimesheets] = useState<(Timesheet & { employee?: Profile })[]>([]);
@@ -35,6 +35,20 @@ export default function TimeManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [timeOffFilter, setTimeOffFilter] = useState<string>("pending");
+
+  // Force clock-out state
+  const [forceClockOutEntry, setForceClockOutEntry] = useState<{ entry: TimeEntry; employee: Profile } | null>(null);
+
+  // Edit time entry state
+  const [editEntry, setEditEntry] = useState<{ entry: TimeEntry; employee: Profile } | null>(null);
+  const [editClockIn, setEditClockIn] = useState("");
+  const [editClockOut, setEditClockOut] = useState("");
+  const [editReason, setEditReason] = useState("");
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+
+  // Edit history state
+  const [editHistoryEntry, setEditHistoryEntry] = useState<TimeEntry | null>(null);
+  const [editHistory, setEditHistory] = useState<(TimeEntryEdit & { editor?: Profile })[]>([]);
 
   useEffect(() => {
     if (isHRManager()) {
