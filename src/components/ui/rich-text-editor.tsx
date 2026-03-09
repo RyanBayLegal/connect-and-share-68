@@ -51,6 +51,9 @@ interface RichTextEditorProps {
 const MenuBar = ({ editor }: { editor: Editor | null }) => {
   const [linkUrl, setLinkUrl] = useState('');
   const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableCols, setTableCols] = useState(3);
+  const [isTablePopoverOpen, setIsTablePopoverOpen] = useState(false);
 
   const setLink = useCallback(() => {
     if (!editor) return;
