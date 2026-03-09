@@ -63,6 +63,7 @@ export default function HRDashboard() {
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [payrollModalOpen, setPayrollModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [offboardingModalOpen, setOffboardingModalOpen] = useState(false);
 
   useEffect(() => {
     if (rolesLoaded && isHRManager()) {
