@@ -254,7 +254,7 @@ export default function HRDashboard() {
       </div>
 
       {/* Tool Buttons — open modals */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setTimeModalOpen(true)}>
           <Clock className="h-5 w-5" /><span>Time Management</span>
         </Button>
