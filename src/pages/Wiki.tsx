@@ -581,7 +581,7 @@ export default function Wiki() {
                   )}
                 </div>
               </DialogHeader>
-              <div ref={articleContentRef} className="prose prose-sm dark:prose-invert max-w-none mt-4">
+              <div ref={articleContentRef} className="prose prose-sm dark:prose-invert max-w-none mt-4 [&_table]:border-collapse [&_table]:table-auto [&_table]:w-full [&_table]:my-4 [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:bg-muted [&_th]:font-semibold">
                 {/* Render HTML content safely */}
                 <div dangerouslySetInnerHTML={{ __html: selectedArticle.content }} />
               </div>

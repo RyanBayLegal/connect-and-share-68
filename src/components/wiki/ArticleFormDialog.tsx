@@ -75,22 +75,27 @@ export function ArticleFormDialog({
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    if (open && initialData) {
-      setTitle(initialData.title || "");
-      setContent(initialData.content || "");
-      setCategoryId(initialData.category_id || "");
-      setDepartmentId(initialData.department_id || "all");
-      setIsFeatured(initialData.is_featured || false);
-      setChangeSummary("");
-      setAttachments(initialData.attachments || []);
-    } else if (!open) {
-      setTitle("");
-      setContent("");
-      setCategoryId("");
-      setDepartmentId("all");
-      setIsFeatured(false);
-      setChangeSummary("");
-      setAttachments([]);
+    if (open) {
+      if (initialData) {
+        setTitle(initialData.title || "");
+        // Use a small delay to ensure editor is mounted before setting content
+        const contentToSet = initialData.content || "";
+        setContent("");
+        setTimeout(() => setContent(contentToSet), 50);
+        setCategoryId(initialData.category_id || "");
+        setDepartmentId(initialData.department_id || "all");
+        setIsFeatured(initialData.is_featured || false);
+        setChangeSummary("");
+        setAttachments(initialData.attachments || []);
+      } else {
+        setTitle("");
+        setContent("");
+        setCategoryId("");
+        setDepartmentId("all");
+        setIsFeatured(false);
+        setChangeSummary("");
+        setAttachments([]);
+      }
     }
   }, [open, initialData]);
 
