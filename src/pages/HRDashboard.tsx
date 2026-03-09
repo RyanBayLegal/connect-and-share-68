@@ -21,6 +21,7 @@ import { TimeManagementModal } from "@/components/hr/TimeManagementModal";
 import { LeaveManagementModal } from "@/components/hr/LeaveManagementModal";
 import { PayrollModal } from "@/components/hr/PayrollModal";
 import { HRSettingsModal } from "@/components/hr/HRSettingsModal";
+import { OffboardingModal } from "@/components/hr/OffboardingModal";
 
 interface EmployeeStatus {
   employee: Profile;
