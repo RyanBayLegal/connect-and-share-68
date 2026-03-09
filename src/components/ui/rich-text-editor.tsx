@@ -3,6 +3,10 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
 import { Toggle } from '@/components/ui/toggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +25,20 @@ import {
   Code,
   Link as LinkIcon,
   Unlink,
+  Table as TableIcon,
+  Plus,
+  Minus,
+  Trash2,
 } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 interface RichTextEditorProps {
   value: string;
@@ -153,6 +168,81 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
 
       <div className="w-px h-6 bg-border mx-1 self-center" />
 
+      {/* Table Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Toggle
+            size="sm"
+            pressed={editor.isActive('table')}
+            aria-label="Table"
+          >
+            <TableIcon className="h-4 w-4" />
+          </Toggle>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-48">
+          {!editor.isActive('table') ? (
+            <DropdownMenuItem
+              onClick={() =>
+                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+              }
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Insert Table
+            </DropdownMenuItem>
+          ) : (
+            <>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().addColumnAfter().run()}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Column After
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().addColumnBefore().run()}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Column Before
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().addRowAfter().run()}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Row After
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().addRowBefore().run()}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Row Before
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().deleteColumn().run()}
+              >
+                <Minus className="h-4 w-4 mr-2" />
+                Delete Column
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().deleteRow().run()}
+              >
+                <Minus className="h-4 w-4 mr-2" />
+                Delete Row
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().deleteTable().run()}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Table
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="w-px h-6 bg-border mx-1 self-center" />
+
       <Popover open={isLinkPopoverOpen} onOpenChange={setIsLinkPopoverOpen}>
         <PopoverTrigger asChild>
           <Toggle
@@ -216,6 +306,15 @@ export function RichTextEditor({
         },
       }),
       Underline,
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse table-auto w-full',
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: value,
     editable: !disabled,
@@ -235,7 +334,7 @@ export function RichTextEditor({
       <MenuBar editor={editor} />
       <EditorContent 
         editor={editor} 
-        className="prose prose-sm dark:prose-invert max-w-none p-4 min-h-[200px] focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[180px] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none"
+        className="prose prose-sm dark:prose-invert max-w-none p-4 min-h-[200px] focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[180px] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_table]:border-collapse [&_.ProseMirror_table]:table-auto [&_.ProseMirror_table]:w-full [&_.ProseMirror_table]:my-4 [&_.ProseMirror_td]:border [&_.ProseMirror_td]:border-border [&_.ProseMirror_td]:p-2 [&_.ProseMirror_td]:min-w-[80px] [&_.ProseMirror_th]:border [&_.ProseMirror_th]:border-border [&_.ProseMirror_th]:p-2 [&_.ProseMirror_th]:bg-muted [&_.ProseMirror_th]:font-semibold [&_.ProseMirror_th]:min-w-[80px] [&_.ProseMirror_.selectedCell]:bg-primary/10"
       />
     </div>
   );
