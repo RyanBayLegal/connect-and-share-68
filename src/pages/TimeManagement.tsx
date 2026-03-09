@@ -568,17 +568,46 @@ export default function TimeManagement() {
                         </p>
                       </div>
                       {es.currentEntry ? (
-                        <Badge style={{ backgroundColor: status?.color || "#22C55E", color: "#fff" }}>
+                        <Badge style={{ backgroundColor: status?.color || undefined }} className="text-white">
                           {status?.name || "Working"}
                         </Badge>
                       ) : (
                         <Badge variant="outline">Off</Badge>
                       )}
                     </div>
-                    <div className="mt-3 pt-3 border-t flex justify-between text-sm">
-                      <span className="text-muted-foreground">Today:</span>
-                      <span className="font-medium">{es.todayHours} hours</span>
+                    <div className="mt-3 pt-3 border-t flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Today: <span className="font-medium text-foreground">{es.todayHours}h</span></span>
+                      <div className="flex gap-1">
+                        {es.currentEntry && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => openEditDialog(es.currentEntry!, es.employee)}
+                              title="Edit time entry"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                              onClick={() => setForceClockOutEntry({ entry: es.currentEntry!, employee: es.employee })}
+                              title="Force clock out"
+                            >
+                              <Square className="h-3 w-3 mr-1" />
+                              Force Out
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
+                    {es.currentEntry && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Clocked in at {format(new Date(es.currentEntry.clock_in), "h:mm a")}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
