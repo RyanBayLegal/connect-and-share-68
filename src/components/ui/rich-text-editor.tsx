@@ -171,78 +171,89 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
 
       <div className="w-px h-6 bg-border mx-1 self-center" />
 
-      {/* Table Dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Toggle
-            size="sm"
-            pressed={editor.isActive('table')}
-            aria-label="Table"
-          >
-            <TableIcon className="h-4 w-4" />
-          </Toggle>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
-          {!editor.isActive('table') ? (
-            <DropdownMenuItem
-              onClick={() =>
-                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
-              }
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Insert Table
+      {/* Table Controls */}
+      {!editor.isActive('table') ? (
+        <Popover open={isTablePopoverOpen} onOpenChange={setIsTablePopoverOpen}>
+          <PopoverTrigger asChild>
+            <Toggle size="sm" pressed={false} aria-label="Insert Table">
+              <TableIcon className="h-4 w-4" />
+            </Toggle>
+          </PopoverTrigger>
+          <PopoverContent className="w-56">
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Insert Table</p>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-muted-foreground w-12">Rows</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={tableRows}
+                  onChange={(e) => setTableRows(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+                  className="h-8"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-muted-foreground w-12">Cols</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={tableCols}
+                  onChange={(e) => setTableCols(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                  className="h-8"
+                />
+              </div>
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  editor.chain().focus().insertTable({ rows: tableRows, cols: tableCols, withHeaderRow: true }).run();
+                  setIsTablePopoverOpen(false);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Insert
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Toggle size="sm" pressed={true} aria-label="Table Options">
+              <TableIcon className="h-4 w-4" />
+            </Toggle>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48">
+            <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()}>
+              <Plus className="h-4 w-4 mr-2" /> Add Column After
             </DropdownMenuItem>
-          ) : (
-            <>
-              <DropdownMenuItem
-                onClick={() => editor.chain().focus().addColumnAfter().run()}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Column After
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => editor.chain().focus().addColumnBefore().run()}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Column Before
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => editor.chain().focus().addRowAfter().run()}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Row After
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => editor.chain().focus().addRowBefore().run()}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Row Before
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => editor.chain().focus().deleteColumn().run()}
-              >
-                <Minus className="h-4 w-4 mr-2" />
-                Delete Column
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => editor.chain().focus().deleteRow().run()}
-              >
-                <Minus className="h-4 w-4 mr-2" />
-                Delete Row
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => editor.chain().focus().deleteTable().run()}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Table
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()}>
+              <Plus className="h-4 w-4 mr-2" /> Add Column Before
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()}>
+              <Plus className="h-4 w-4 mr-2" /> Add Row After
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()}>
+              <Plus className="h-4 w-4 mr-2" /> Add Row Before
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()}>
+              <Minus className="h-4 w-4 mr-2" /> Delete Column
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()}>
+              <Minus className="h-4 w-4 mr-2" /> Delete Row
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().deleteTable().run()}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" /> Delete Table
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       <div className="w-px h-6 bg-border mx-1 self-center" />
 
