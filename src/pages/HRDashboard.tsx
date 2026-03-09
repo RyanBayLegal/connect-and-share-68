@@ -21,6 +21,7 @@ import { TimeManagementModal } from "@/components/hr/TimeManagementModal";
 import { LeaveManagementModal } from "@/components/hr/LeaveManagementModal";
 import { PayrollModal } from "@/components/hr/PayrollModal";
 import { HRSettingsModal } from "@/components/hr/HRSettingsModal";
+import { OffboardingModal } from "@/components/hr/OffboardingModal";
 
 interface EmployeeStatus {
   employee: Profile;
@@ -62,6 +63,7 @@ export default function HRDashboard() {
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [payrollModalOpen, setPayrollModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [offboardingModalOpen, setOffboardingModalOpen] = useState(false);
 
   useEffect(() => {
     if (rolesLoaded && isHRManager()) {
@@ -252,7 +254,7 @@ export default function HRDashboard() {
       </div>
 
       {/* Tool Buttons — open modals */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setTimeModalOpen(true)}>
           <Clock className="h-5 w-5" /><span>Time Management</span>
         </Button>
@@ -264,6 +266,9 @@ export default function HRDashboard() {
         </Button>
         <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setSettingsModalOpen(true)}>
           <Settings className="h-5 w-5" /><span>HR Settings</span>
+        </Button>
+        <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setOffboardingModalOpen(true)}>
+          <UserX className="h-5 w-5" /><span>Offboarding</span>
         </Button>
       </div>
 
@@ -445,6 +450,7 @@ export default function HRDashboard() {
       <LeaveManagementModal open={leaveModalOpen} onOpenChange={setLeaveModalOpen} onDataChanged={fetchData} />
       <PayrollModal open={payrollModalOpen} onOpenChange={setPayrollModalOpen} onDataChanged={fetchData} />
       <HRSettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
+      <OffboardingModal open={offboardingModalOpen} onOpenChange={setOffboardingModalOpen} onDataChanged={fetchData} />
     </div>
   );
 }
