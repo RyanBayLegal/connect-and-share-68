@@ -834,6 +834,125 @@ export default function TimeManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Force Clock-Out Confirmation Dialog */}
+      <Dialog open={!!forceClockOutEntry} onOpenChange={() => setForceClockOutEntry(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Force Clock Out</DialogTitle>
+          </DialogHeader>
+          {forceClockOutEntry && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to force clock out{" "}
+                <span className="font-medium text-foreground">
+                  {forceClockOutEntry.employee.first_name} {forceClockOutEntry.employee.last_name}
+                </span>
+                ? They have been clocked in since{" "}
+                <span className="font-medium text-foreground">
+                  {format(new Date(forceClockOutEntry.entry.clock_in), "MMM d, h:mm a")}
+                </span>.
+              </p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setForceClockOutEntry(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleForceClockOut}>
+                  <Square className="h-4 w-4 mr-2" />
+                  Force Clock Out
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Time Entry Dialog */}
+      <Dialog open={!!editEntry} onOpenChange={() => setEditEntry(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Edit Time Entry — {editEntry?.employee.first_name} {editEntry?.employee.last_name}
+            </DialogTitle>
+          </DialogHeader>
+          {editEntry && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Clock In</Label>
+                <Input
+                  type="datetime-local"
+                  value={editClockIn}
+                  onChange={(e) => setEditClockIn(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Clock Out</Label>
+                <Input
+                  type="datetime-local"
+                  value={editClockOut}
+                  onChange={(e) => setEditClockOut(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Reason for Edit <span className="text-destructive">*</span></Label>
+                <Textarea
+                  value={editReason}
+                  onChange={(e) => setEditReason(e.target.value)}
+                  placeholder="Explain why this entry is being modified..."
+                  rows={2}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditEntry(null)}>Cancel</Button>
+                <Button onClick={handleSaveEdit} disabled={isSubmittingEdit || !editReason.trim()}>
+                  {isSubmittingEdit ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit History Dialog */}
+      <Dialog open={!!editHistoryEntry} onOpenChange={() => setEditHistoryEntry(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit History</DialogTitle>
+          </DialogHeader>
+          {editHistory.length > 0 ? (
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {editHistory.map((edit) => (
+                <div key={edit.id} className="border rounded-lg p-3 text-sm space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">
+                      {edit.editor ? `${edit.editor.first_name} ${edit.editor.last_name}` : "Unknown"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(edit.created_at), "MMM d, yyyy h:mm a")}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground">
+                    Changed <span className="font-medium text-foreground">{edit.field_changed}</span>
+                  </p>
+                  {edit.old_value && (
+                    <p className="text-xs">
+                      From: <span className="font-mono">{format(new Date(edit.old_value), "MMM d, h:mm a")}</span>
+                    </p>
+                  )}
+                  {edit.new_value && (
+                    <p className="text-xs">
+                      To: <span className="font-mono">{format(new Date(edit.new_value), "MMM d, h:mm a")}</span>
+                    </p>
+                  )}
+                  {edit.reason && (
+                    <p className="text-xs italic text-muted-foreground">Reason: {edit.reason}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">No edit history for this entry.</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
