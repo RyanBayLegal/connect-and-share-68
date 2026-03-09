@@ -277,6 +277,128 @@ export default function TimeManagement() {
 
   const getStatusById = (id: string | null) => statuses.find((s) => s.id === id);
 
+  // Force clock-out handler
+  const handleForceClockOut = async () => {
+    if (!forceClockOutEntry || !profile) return;
+    try {
+      const { error } = await supabase
+        .from("time_entries")
+        .update({ clock_out: new Date().toISOString() })
+        .eq("id", forceClockOutEntry.entry.id);
+
+      if (error) throw error;
+
+      // Log the edit
+      await supabase.from("time_entry_edits").insert({
+        time_entry_id: forceClockOutEntry.entry.id,
+        edited_by: profile.id,
+        field_changed: "clock_out",
+        old_value: null,
+        new_value: new Date().toISOString(),
+        reason: "Force clock-out by admin",
+      });
+
+      toast({ title: `Force clocked out ${forceClockOutEntry.employee.first_name} ${forceClockOutEntry.employee.last_name}` });
+      setForceClockOutEntry(null);
+      fetchData();
+    } catch (error) {
+      console.error("Error force clocking out:", error);
+      toast({ title: "Error force clocking out", variant: "destructive" });
+    }
+  };
+
+  // Open edit dialog
+  const openEditDialog = (entry: TimeEntry, employee: Profile) => {
+    setEditEntry({ entry, employee });
+    setEditClockIn(format(new Date(entry.clock_in), "yyyy-MM-dd'T'HH:mm"));
+    setEditClockOut(entry.clock_out ? format(new Date(entry.clock_out), "yyyy-MM-dd'T'HH:mm") : "");
+    setEditReason("");
+  };
+
+  // Save time entry edit
+  const handleSaveEdit = async () => {
+    if (!editEntry || !profile || !editReason.trim()) return;
+    setIsSubmittingEdit(true);
+
+    try {
+      const updates: Record<string, string> = {};
+      const edits: { field_changed: string; old_value: string | null; new_value: string }[] = [];
+
+      const newClockIn = new Date(editClockIn).toISOString();
+      if (newClockIn !== editEntry.entry.clock_in) {
+        updates.clock_in = newClockIn;
+        edits.push({ field_changed: "clock_in", old_value: editEntry.entry.clock_in, new_value: newClockIn });
+      }
+
+      const newClockOut = editClockOut ? new Date(editClockOut).toISOString() : null;
+      if (newClockOut !== editEntry.entry.clock_out) {
+        updates.clock_out = newClockOut!;
+        edits.push({ field_changed: "clock_out", old_value: editEntry.entry.clock_out, new_value: newClockOut || "" });
+      }
+
+      if (Object.keys(updates).length === 0) {
+        toast({ title: "No changes made" });
+        setEditEntry(null);
+        setIsSubmittingEdit(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("time_entries")
+        .update(updates)
+        .eq("id", editEntry.entry.id);
+
+      if (error) throw error;
+
+      // Log all edits
+      for (const edit of edits) {
+        await supabase.from("time_entry_edits").insert({
+          time_entry_id: editEntry.entry.id,
+          edited_by: profile.id,
+          ...edit,
+          reason: editReason,
+        });
+      }
+
+      toast({ title: "Time entry updated!" });
+      setEditEntry(null);
+      setEditReason("");
+      fetchData();
+    } catch (error) {
+      console.error("Error editing time entry:", error);
+      toast({ title: "Error editing time entry", variant: "destructive" });
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  // Fetch edit history for an entry
+  const fetchEditHistory = async (entry: TimeEntry) => {
+    setEditHistoryEntry(entry);
+    const { data } = await supabase
+      .from("time_entry_edits")
+      .select("*")
+      .eq("time_entry_id", entry.id)
+      .order("created_at", { ascending: false });
+
+    if (data && data.length > 0) {
+      const editorIds = [...new Set(data.map((e: any) => e.edited_by))];
+      const { data: editors } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", editorIds);
+
+      setEditHistory(
+        data.map((e: any) => ({
+          ...e,
+          editor: editors?.find((ed) => ed.id === e.edited_by) as Profile | undefined,
+        }))
+      );
+    } else {
+      setEditHistory([]);
+    }
+  };
+
   const filteredEmployees = employeeStatuses.filter((es) => {
     const matchesSearch =
       `${es.employee.first_name} ${es.employee.last_name}`
