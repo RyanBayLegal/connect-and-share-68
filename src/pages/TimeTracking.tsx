@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Play, Square, Calendar, Plus, Send, Loader2, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { Clock, Play, Square, Calendar, Plus, Send, Loader2, ChevronLeft, ChevronRight, Lock, Pencil } from "lucide-react";
 import {
   format,
   differenceInMinutes,
@@ -659,11 +659,32 @@ function DailyEntryList({
   calculateSeconds: (e: TimeEntry) => number;
 }) {
   const getStatus = (id: string | null) => statuses.find((s) => s.id === id);
+  const [editedEntries, setEditedEntries] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const fetchEdits = async () => {
+      if (entries.length === 0) return;
+      const ids = entries.map(e => e.id);
+      const { data } = await supabase
+        .from("time_entry_edits")
+        .select("time_entry_id")
+        .in("time_entry_id", ids);
+      if (data) {
+        const counts: Record<string, number> = {};
+        data.forEach((d: any) => {
+          counts[d.time_entry_id] = (counts[d.time_entry_id] || 0) + 1;
+        });
+        setEditedEntries(counts);
+      }
+    };
+    fetchEdits();
+  }, [entries]);
 
   return (
     <div className="space-y-2">
       {entries.map((entry) => {
         const status = getStatus(entry.status_id);
+        const wasEdited = editedEntries[entry.id];
         return (
           <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50">
             <div className="flex items-center gap-3">
@@ -686,6 +707,12 @@ function DailyEntryList({
               )}
               {entry.is_manual_entry && (
                 <Badge variant="outline" className="text-[10px]">Manual</Badge>
+              )}
+              {wasEdited && (
+                <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600">
+                  <Pencil className="h-2.5 w-2.5 mr-0.5" />
+                  Edited
+                </Badge>
               )}
             </div>
             <span className="font-mono text-sm font-medium">{formatDuration(calculateSeconds(entry))}</span>

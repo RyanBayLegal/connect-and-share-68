@@ -426,6 +426,19 @@ export interface OffboardingItem {
   created_at: string;
 }
 
+// Time Entry Edit Audit Types
+export interface TimeEntryEdit {
+  id: string;
+  time_entry_id: string;
+  edited_by: string;
+  field_changed: string;
+  old_value: string | null;
+  new_value: string | null;
+  reason: string | null;
+  created_at: string;
+  editor?: Profile;
+}
+
 // Time-Off Request Types
 export interface TimeOffRequest {
   id: string;

@@ -1770,6 +1770,54 @@ export type Database = {
           },
         ]
       }
+      time_entry_edits: {
+        Row: {
+          created_at: string
+          edited_by: string
+          field_changed: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          reason: string | null
+          time_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          edited_by: string
+          field_changed: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          reason?: string | null
+          time_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          edited_by?: string
+          field_changed?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          reason?: string | null
+          time_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entry_edits_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entry_edits_time_entry_id_fkey"
+            columns: ["time_entry_id"]
+            isOneToOne: false
+            referencedRelation: "time_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       time_off_requests: {
         Row: {
           created_at: string | null

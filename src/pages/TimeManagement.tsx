@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Users, CheckCircle, XCircle, Search, Download, Calendar } from "lucide-react";
+import { Clock, Users, CheckCircle, XCircle, Search, Download, Calendar, Square, Pencil, History } from "lucide-react";
 import { format, differenceInMinutes, startOfWeek, endOfWeek } from "date-fns";
-import type { TimeEntry, TimeTrackingStatus, Timesheet, Profile, TimeOffRequest } from "@/types/database";
+import type { TimeEntry, TimeTrackingStatus, Timesheet, Profile, TimeOffRequest, TimeEntryEdit } from "@/types/database";
 
 interface EmployeeStatus {
   employee: Profile;
@@ -21,7 +24,7 @@ interface EmployeeStatus {
 }
 
 export default function TimeManagement() {
-  const { isHRManager, rolesLoaded } = useAuth();
+  const { profile, isHRManager, rolesLoaded } = useAuth();
   const { toast } = useToast();
   const [employeeStatuses, setEmployeeStatuses] = useState<EmployeeStatus[]>([]);
   const [pendingTimesheets, setPendingTimesheets] = useState<(Timesheet & { employee?: Profile })[]>([]);
@@ -32,6 +35,20 @@ export default function TimeManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [timeOffFilter, setTimeOffFilter] = useState<string>("pending");
+
+  // Force clock-out state
+  const [forceClockOutEntry, setForceClockOutEntry] = useState<{ entry: TimeEntry; employee: Profile } | null>(null);
+
+  // Edit time entry state
+  const [editEntry, setEditEntry] = useState<{ entry: TimeEntry; employee: Profile } | null>(null);
+  const [editClockIn, setEditClockIn] = useState("");
+  const [editClockOut, setEditClockOut] = useState("");
+  const [editReason, setEditReason] = useState("");
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+
+  // Edit history state
+  const [editHistoryEntry, setEditHistoryEntry] = useState<TimeEntry | null>(null);
+  const [editHistory, setEditHistory] = useState<(TimeEntryEdit & { editor?: Profile })[]>([]);
 
   useEffect(() => {
     if (isHRManager()) {
@@ -260,6 +277,128 @@ export default function TimeManagement() {
 
   const getStatusById = (id: string | null) => statuses.find((s) => s.id === id);
 
+  // Force clock-out handler
+  const handleForceClockOut = async () => {
+    if (!forceClockOutEntry || !profile) return;
+    try {
+      const { error } = await supabase
+        .from("time_entries")
+        .update({ clock_out: new Date().toISOString() })
+        .eq("id", forceClockOutEntry.entry.id);
+
+      if (error) throw error;
+
+      // Log the edit
+      await supabase.from("time_entry_edits").insert({
+        time_entry_id: forceClockOutEntry.entry.id,
+        edited_by: profile.id,
+        field_changed: "clock_out",
+        old_value: null,
+        new_value: new Date().toISOString(),
+        reason: "Force clock-out by admin",
+      });
+
+      toast({ title: `Force clocked out ${forceClockOutEntry.employee.first_name} ${forceClockOutEntry.employee.last_name}` });
+      setForceClockOutEntry(null);
+      fetchData();
+    } catch (error) {
+      console.error("Error force clocking out:", error);
+      toast({ title: "Error force clocking out", variant: "destructive" });
+    }
+  };
+
+  // Open edit dialog
+  const openEditDialog = (entry: TimeEntry, employee: Profile) => {
+    setEditEntry({ entry, employee });
+    setEditClockIn(format(new Date(entry.clock_in), "yyyy-MM-dd'T'HH:mm"));
+    setEditClockOut(entry.clock_out ? format(new Date(entry.clock_out), "yyyy-MM-dd'T'HH:mm") : "");
+    setEditReason("");
+  };
+
+  // Save time entry edit
+  const handleSaveEdit = async () => {
+    if (!editEntry || !profile || !editReason.trim()) return;
+    setIsSubmittingEdit(true);
+
+    try {
+      const updates: Record<string, string> = {};
+      const edits: { field_changed: string; old_value: string | null; new_value: string }[] = [];
+
+      const newClockIn = new Date(editClockIn).toISOString();
+      if (newClockIn !== editEntry.entry.clock_in) {
+        updates.clock_in = newClockIn;
+        edits.push({ field_changed: "clock_in", old_value: editEntry.entry.clock_in, new_value: newClockIn });
+      }
+
+      const newClockOut = editClockOut ? new Date(editClockOut).toISOString() : null;
+      if (newClockOut !== editEntry.entry.clock_out) {
+        updates.clock_out = newClockOut!;
+        edits.push({ field_changed: "clock_out", old_value: editEntry.entry.clock_out, new_value: newClockOut || "" });
+      }
+
+      if (Object.keys(updates).length === 0) {
+        toast({ title: "No changes made" });
+        setEditEntry(null);
+        setIsSubmittingEdit(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("time_entries")
+        .update(updates)
+        .eq("id", editEntry.entry.id);
+
+      if (error) throw error;
+
+      // Log all edits
+      for (const edit of edits) {
+        await supabase.from("time_entry_edits").insert({
+          time_entry_id: editEntry.entry.id,
+          edited_by: profile.id,
+          ...edit,
+          reason: editReason,
+        });
+      }
+
+      toast({ title: "Time entry updated!" });
+      setEditEntry(null);
+      setEditReason("");
+      fetchData();
+    } catch (error) {
+      console.error("Error editing time entry:", error);
+      toast({ title: "Error editing time entry", variant: "destructive" });
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  // Fetch edit history for an entry
+  const fetchEditHistory = async (entry: TimeEntry) => {
+    setEditHistoryEntry(entry);
+    const { data } = await supabase
+      .from("time_entry_edits")
+      .select("*")
+      .eq("time_entry_id", entry.id)
+      .order("created_at", { ascending: false });
+
+    if (data && data.length > 0) {
+      const editorIds = [...new Set(data.map((e: any) => e.edited_by))];
+      const { data: editors } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", editorIds);
+
+      setEditHistory(
+        data.map((e: any) => ({
+          ...e,
+          editor: editors?.find((ed) => ed.id === e.edited_by) as Profile | undefined,
+        }))
+      );
+    } else {
+      setEditHistory([]);
+    }
+  };
+
   const filteredEmployees = employeeStatuses.filter((es) => {
     const matchesSearch =
       `${es.employee.first_name} ${es.employee.last_name}`
@@ -429,17 +568,46 @@ export default function TimeManagement() {
                         </p>
                       </div>
                       {es.currentEntry ? (
-                        <Badge style={{ backgroundColor: status?.color || "#22C55E", color: "#fff" }}>
+                        <Badge style={{ backgroundColor: status?.color || undefined }} className="text-white">
                           {status?.name || "Working"}
                         </Badge>
                       ) : (
                         <Badge variant="outline">Off</Badge>
                       )}
                     </div>
-                    <div className="mt-3 pt-3 border-t flex justify-between text-sm">
-                      <span className="text-muted-foreground">Today:</span>
-                      <span className="font-medium">{es.todayHours} hours</span>
+                    <div className="mt-3 pt-3 border-t flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Today: <span className="font-medium text-foreground">{es.todayHours}h</span></span>
+                      <div className="flex gap-1">
+                        {es.currentEntry && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => openEditDialog(es.currentEntry!, es.employee)}
+                              title="Edit time entry"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                              onClick={() => setForceClockOutEntry({ entry: es.currentEntry!, employee: es.employee })}
+                              title="Force clock out"
+                            >
+                              <Square className="h-3 w-3 mr-1" />
+                              Force Out
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
+                    {es.currentEntry && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Clocked in at {format(new Date(es.currentEntry.clock_in), "h:mm a")}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -666,6 +834,125 @@ export default function TimeManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Force Clock-Out Confirmation Dialog */}
+      <Dialog open={!!forceClockOutEntry} onOpenChange={() => setForceClockOutEntry(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Force Clock Out</DialogTitle>
+          </DialogHeader>
+          {forceClockOutEntry && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to force clock out{" "}
+                <span className="font-medium text-foreground">
+                  {forceClockOutEntry.employee.first_name} {forceClockOutEntry.employee.last_name}
+                </span>
+                ? They have been clocked in since{" "}
+                <span className="font-medium text-foreground">
+                  {format(new Date(forceClockOutEntry.entry.clock_in), "MMM d, h:mm a")}
+                </span>.
+              </p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setForceClockOutEntry(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleForceClockOut}>
+                  <Square className="h-4 w-4 mr-2" />
+                  Force Clock Out
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Time Entry Dialog */}
+      <Dialog open={!!editEntry} onOpenChange={() => setEditEntry(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Edit Time Entry — {editEntry?.employee.first_name} {editEntry?.employee.last_name}
+            </DialogTitle>
+          </DialogHeader>
+          {editEntry && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Clock In</Label>
+                <Input
+                  type="datetime-local"
+                  value={editClockIn}
+                  onChange={(e) => setEditClockIn(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Clock Out</Label>
+                <Input
+                  type="datetime-local"
+                  value={editClockOut}
+                  onChange={(e) => setEditClockOut(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Reason for Edit <span className="text-destructive">*</span></Label>
+                <Textarea
+                  value={editReason}
+                  onChange={(e) => setEditReason(e.target.value)}
+                  placeholder="Explain why this entry is being modified..."
+                  rows={2}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditEntry(null)}>Cancel</Button>
+                <Button onClick={handleSaveEdit} disabled={isSubmittingEdit || !editReason.trim()}>
+                  {isSubmittingEdit ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit History Dialog */}
+      <Dialog open={!!editHistoryEntry} onOpenChange={() => setEditHistoryEntry(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit History</DialogTitle>
+          </DialogHeader>
+          {editHistory.length > 0 ? (
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {editHistory.map((edit) => (
+                <div key={edit.id} className="border rounded-lg p-3 text-sm space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">
+                      {edit.editor ? `${edit.editor.first_name} ${edit.editor.last_name}` : "Unknown"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(edit.created_at), "MMM d, yyyy h:mm a")}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground">
+                    Changed <span className="font-medium text-foreground">{edit.field_changed}</span>
+                  </p>
+                  {edit.old_value && (
+                    <p className="text-xs">
+                      From: <span className="font-mono">{format(new Date(edit.old_value), "MMM d, h:mm a")}</span>
+                    </p>
+                  )}
+                  {edit.new_value && (
+                    <p className="text-xs">
+                      To: <span className="font-mono">{format(new Date(edit.new_value), "MMM d, h:mm a")}</span>
+                    </p>
+                  )}
+                  {edit.reason && (
+                    <p className="text-xs italic text-muted-foreground">Reason: {edit.reason}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-4">No edit history for this entry.</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
