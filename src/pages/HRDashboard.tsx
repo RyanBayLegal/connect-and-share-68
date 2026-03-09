@@ -450,6 +450,7 @@ export default function HRDashboard() {
       <LeaveManagementModal open={leaveModalOpen} onOpenChange={setLeaveModalOpen} onDataChanged={fetchData} />
       <PayrollModal open={payrollModalOpen} onOpenChange={setPayrollModalOpen} onDataChanged={fetchData} />
       <HRSettingsModal open={settingsModalOpen} onOpenChange={setSettingsModalOpen} />
+      <OffboardingModal open={offboardingModalOpen} onOpenChange={setOffboardingModalOpen} onDataChanged={fetchData} />
     </div>
   );
 }
