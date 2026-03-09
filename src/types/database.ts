@@ -405,6 +405,27 @@ export interface EmployeeDeduction {
   deduction_type?: PayrollDeductionType;
 }
 
+// Offboarding Types
+export interface OffboardingChecklist {
+  id: string;
+  employee_id: string;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  employee?: Profile;
+}
+
+export interface OffboardingItem {
+  id: string;
+  checklist_id: string;
+  title: string;
+  is_completed: boolean;
+  completed_by: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
 // Time-Off Request Types
 export interface TimeOffRequest {
   id: string;
